@@ -17,12 +17,11 @@ export const login = async (email: string, senha: string) => {
     if (!senhaCorreta) {
       throw new Error('Senha incorreta');
     }
-    
-    // Gerar token JWT
+      // Gerar token JWT
     const token = gerarToken({
       id_usuario: usuario.id_usuario,
       email_usuario: usuario.email_usuario,
-      tipo: TipoUsuario.ESCOLA // Isso deve ser adaptado com base na lógica real de tipos de usuários
+      tipo: usuario.tipo_usuario // Usa o tipo de usuário do banco de dados
     });
     
     // Retornar token e dados básicos do usuário
@@ -31,7 +30,8 @@ export const login = async (email: string, senha: string) => {
       usuario: {
         id: usuario.id_usuario,
         nome: usuario.nome_usuario,
-        email: usuario.email_usuario
+        email: usuario.email_usuario,
+        tipo: usuario.tipo_usuario // Inclui o tipo de usuário na resposta
       }
     };
   } catch (error) {
@@ -50,6 +50,15 @@ export const registrar = async (dados: any) => {
     
     if (usuarioExistente) {
       throw new Error('Email já cadastrado');
+    }
+      // Validar o tipo de usuário
+    if (!dados.tipo_usuario || !Object.values(TipoUsuario).includes(dados.tipo_usuario)) {
+      throw new Error('Tipo de usuário inválido');
+    }
+    
+    // Validar id_escola apenas se o tipo for ESCOLA ou GESTOR_ESCOLAR
+    if ((dados.tipo_usuario === TipoUsuario.ESCOLA || dados.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && !dados.id_escola) {
+      throw new Error('ID da escola é obrigatório para usuários do tipo Escola ou Gestor Escolar');
     }
     
     // Criptografar a senha

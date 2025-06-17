@@ -1,0 +1,84 @@
+[
+    {
+        "nome_escola": "CRECHE ALFREDO COUTO",
+        "endereco_escola": "R. SILA MACEDO, 86, PLANALTO",
+        "email_escola": "creacouto@gmail.com",
+        "segmento_escola": [
+            "creche"
+        ]
+    },
+    {
+        "nome_escola": "E M ALZIRA CHAVES LACERDA",
+        "endereco_escola": "R. ABÍLIO JOSÉ FRITZ, S/Nº, BOM PASTOR",
+        "email_escola": "emalzirachaveslacerda@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "creche",
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M ARISTÓTELES DA SILVA BRAGA",
+        "endereco_escola": "PÇA. ARISTIDES BRAGA, 50, B. J. DA CACHOEIRA",
+        "email_escola": "emaristoteles@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola",
+            "brasil alfabetizado"
+        ]
+    },
+    {
+        "nome_escola": "E M ANTÔNIO FORTINI",
+        "endereco_escola": "COMUNIDADE SÃO JOÃO DO GLÓRIA",
+        "email_escola": "emantoniofortini@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M ANTÔNIO PEREIRA DA SILVA",
+        "endereco_escola": "SOFOCÓ",
+        "email_escola": "emantoniopereira@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M CÂNDIDO PORTINARI",
+        "endereco_escola": "AV. ANTÔNIO TURETA, 650, JOANÓPOLIS",
+        "email_escola": "emcandidoportinari@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M CLARA DE CASTRO ROGÉRIO",
+        "endereco_escola": "R. CEL. PEREIRA SOBRINHO, 930, PORTO",
+        "email_escola": "emclaradecastro@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M CLÉRIA TICON CARNEIRO",
+        "endereco_escola": "R. SARA DE JESUS GERVÁSIO, 19, SANTANA",
+        "email_escola": "emcleriaticon@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M DEJANIRA PASSONI DE OLIVEIRA",
+        "endereco_escola": "AV. RUTH DO CARMO, S/Nº, MACUCO",
+        "email_escola": "emdejanira@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    },
+    {
+        "nome_escola": "E M DR ANTÔNIO CANÊDO",
+        "endereco_escola": "PÇ. SÃO PAULO, 110, CENTRO",
+        "email_escola": "emantoniocanedo@edu.muriae.mg.gov.br",
+        "segmento_escola": [
+            "escola"
+        ]
+    }
+]

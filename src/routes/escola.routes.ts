@@ -17,6 +17,18 @@ escolaRouter.post('/',
   EscolaController.criarEscola
 );
 
+// Rota para importação em massa de escolas (protegida)
+escolaRouter.post('/importar', 
+  autenticar, 
+  autorizarPor([TipoUsuario.ADMIN]), 
+  EscolaController.importarEscolasMassa
+);
+
+// Rota temporária para testes de importação em massa sem autenticação
+escolaRouter.post('/importar-teste', 
+  EscolaController.importarEscolasMassa
+);
+
 escolaRouter.put('/:id', 
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR]), 

@@ -14,9 +14,10 @@ export interface Usuario {
   id_usuario: string; // UUID
   nome_usuario: string;
   sobrenome_usuario: string;
-  id_escola?: string; // UUID, pode ser nulo
+  id_escola?: string; // UUID, agora pode ser nulo
   email_usuario: string;
   senha_usuario: string;
+  tipo_usuario: TipoUsuario; // Tipo do usuário (admin, escola, nutricionista, etc.)
 }
 
 // Interface da escola
@@ -25,7 +26,7 @@ export interface Escola {
   nome_escola: string;
   endereco_escola: string;
   email_escola: string;
-  segmento_escola: string;
+  segmento_escola: string[]; // Agora é um array de strings para múltiplos segmentos
 }
 
 // Interface do fornecedor

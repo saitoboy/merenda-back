@@ -14,7 +14,12 @@ import pedidoRouter from './routes/pedido.routes';
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+// Configuração detalhada do CORS
+app.use(cors({
+  origin: '*', // Permite todas as origens em ambiente de desenvolvimento
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Rota raiz
 app.get("/", async (req: Request, res: Response) => {
@@ -59,7 +64,7 @@ app.use('/estoque', estoqueRouter);
 app.use('/fornecedores', fornecedorRouter);
 app.use('/pedidos', pedidoRouter);
 
-const server = app.listen(process.env.PORT || 3003, () => {
+const server = app.listen(process.env.PORT || 3000, () => {
   if (server) {
     const address = server.address() as AddressInfo;
     console.log(`Servidor rodando em http://localhost:${address.port}`);

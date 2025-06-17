@@ -38,12 +38,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const registrar = async (req: Request, res: Response): Promise<void> => {
   try {
     const dadosUsuario = req.body;
-    
-    // Validações básicas
+      // Validações básicas
     if (!dadosUsuario.nome_usuario || !dadosUsuario.email_usuario || !dadosUsuario.senha_usuario) {
       res.status(400).json({
         status: 'erro',
         mensagem: 'Nome, email e senha são obrigatórios'
+      });
+      return;
+    }    // Validação do tipo de usuário
+    if (!dadosUsuario.tipo_usuario) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Tipo de usuário é obrigatório'
+      });
+      return;
+    }
+    
+    // Validação do id_escola (só para tipos específicos)
+    if ((dadosUsuario.tipo_usuario === 'escola' || dadosUsuario.tipo_usuario === 'gestor_escolar') && !dadosUsuario.id_escola) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID da escola é obrigatório para usuários do tipo Escola ou Gestor Escolar'
       });
       return;
     }
