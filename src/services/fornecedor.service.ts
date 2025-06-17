@@ -1,14 +1,19 @@
 import * as FornecedorModel from '../model/fornecedor.model';
 import { Fornecedor } from '../types';
-import { compararSenha, criptografarSenha, gerarUUID } from '../utils';
+import { compararSenha, criptografarSenha, gerarUUID, logger } from '../utils';
 
 export const buscarTodosFornecedores = async () => {
   try {
-    return await FornecedorModel.listarTodos();
+    logger.info('Buscando todos os fornecedores', 'fornecedor');
+    const fornecedores = await FornecedorModel.listarTodos();
+    logger.success(`Encontrados ${fornecedores.length} fornecedores`, 'fornecedor');
+    return fornecedores;
   } catch (error) {
     if (error instanceof Error) {
+      logger.error(`Erro ao buscar fornecedores: ${error.message}`, 'fornecedor');
       throw new Error(`Erro ao buscar fornecedores: ${error.message}`);
     } else {
+      logger.error('Erro desconhecido ao buscar fornecedores', 'fornecedor');
       throw new Error('Erro desconhecido ao buscar fornecedores');
     }
   }
@@ -16,17 +21,22 @@ export const buscarTodosFornecedores = async () => {
 
 export const buscarFornecedorPorId = async (id: string) => {
   try {
+    logger.info(`Buscando fornecedor com ID: ${id}`, 'fornecedor');
     const fornecedor = await FornecedorModel.buscarPorId(id);
     
     if (!fornecedor) {
+      logger.warning(`Fornecedor com ID ${id} não encontrado`, 'fornecedor');
       throw new Error('Fornecedor não encontrado');
     }
     
+    logger.success(`Fornecedor ${fornecedor.nome_fornecedor} encontrado com sucesso`, 'fornecedor');
     return fornecedor;
   } catch (error) {
     if (error instanceof Error) {
+      logger.error(`Erro ao buscar fornecedor: ${error.message}`, 'fornecedor');
       throw new Error(`Erro ao buscar fornecedor: ${error.message}`);
     } else {
+      logger.error('Erro desconhecido ao buscar fornecedor', 'fornecedor');
       throw new Error('Erro desconhecido ao buscar fornecedor');
     }
   }
@@ -34,37 +44,51 @@ export const buscarFornecedorPorId = async (id: string) => {
 
 export const criarFornecedor = async (dados: Omit<Fornecedor, 'id_fornecedor'>) => {
   try {
+    logger.info('Iniciando criação de novo fornecedor', 'fornecedor');
+    logger.debug(`Dados do fornecedor: ${dados.nome_fornecedor}, CNPJ: ${dados.cnpj_fornecedor}`, 'fornecedor');
+    
     // Verificar se já existe fornecedor com o mesmo email
+    logger.debug(`Verificando se já existe fornecedor com o email: ${dados.email_fornecedor}`, 'fornecedor');
     const fornecedorExistentePorEmail = await FornecedorModel.buscarPorEmail(dados.email_fornecedor);
     
     if (fornecedorExistentePorEmail) {
+      logger.warning(`Já existe um fornecedor com o email ${dados.email_fornecedor}`, 'fornecedor');
       throw new Error('Já existe um fornecedor com este email');
     }
     
     // Verificar se já existe fornecedor com o mesmo CNPJ
+    logger.debug(`Verificando se já existe fornecedor com o CNPJ: ${dados.cnpj_fornecedor}`, 'fornecedor');
     const fornecedorExistentePorCnpj = await FornecedorModel.buscarPorCnpj(dados.cnpj_fornecedor);
     
     if (fornecedorExistentePorCnpj) {
+      logger.warning(`Já existe um fornecedor com o CNPJ ${dados.cnpj_fornecedor}`, 'fornecedor');
       throw new Error('Já existe um fornecedor com este CNPJ');
     }
     
     // Criptografar a senha
+    logger.debug('Criptografando senha do fornecedor', 'fornecedor');
     const senhaCriptografada = await criptografarSenha(dados.senha_fornecedor);
     
     // Criar o fornecedor com a senha criptografada
-    const id = await FornecedorModel.criar({
+    const dadosComSenhaCriptografada = {
       ...dados,
       senha_fornecedor: senhaCriptografada
-    });
+    };
     
+    logger.debug('Inserindo novo fornecedor no banco de dados', 'fornecedor');
+    const id = await FornecedorModel.criar(dadosComSenhaCriptografada);
+    
+    logger.success(`Fornecedor ${dados.nome_fornecedor} criado com sucesso, ID: ${id}`, 'fornecedor');
     return {
       id,
       mensagem: 'Fornecedor criado com sucesso'
     };
   } catch (error) {
     if (error instanceof Error) {
+      logger.error(`Erro ao criar fornecedor: ${error.message}`, 'fornecedor');
       throw new Error(`Erro ao criar fornecedor: ${error.message}`);
     } else {
+      logger.error('Erro desconhecido ao criar fornecedor', 'fornecedor');
       throw new Error('Erro desconhecido ao criar fornecedor');
     }
   }

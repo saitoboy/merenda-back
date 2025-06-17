@@ -16,13 +16,15 @@ const connection = knex({
     }
 })
 
+import { logger } from './utils';
+
 // Teste inicial de conexão
 connection.raw('SELECT 1+1 AS result')
   .then(() => {
-    console.log('✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!')
+    logger.success('Conexão com o banco de dados PostgreSQL estabelecida com sucesso!', 'database');
   })
   .catch((error) => {
-    console.error('❌ Erro ao conectar com o banco de dados PostgreSQL:', error)
+    logger.error(`Erro ao conectar com o banco de dados PostgreSQL: ${error.message}`, 'database');
   });
 
 export default connection;

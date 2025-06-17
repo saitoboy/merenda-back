@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { TipoUsuario } from '../types';
+import logger from './logger';
 
 // Gerenciamento de tokens JWT
 export const gerarToken = (usuario: { id_usuario: string; email_usuario: string; tipo: TipoUsuario }): string => {
@@ -70,3 +71,6 @@ export const gerarUUID = (): string => {
     return v.toString(16);
   });
 };
+
+// Exportar logger
+export { default as logger } from './logger';
