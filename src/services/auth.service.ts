@@ -1,4 +1,4 @@
-import { compararSenha, gerarToken, logger } from '../utils';
+import { compararSenha, criptografarSenha, gerarToken, logger } from '../utils';
 import * as UsuarioModel from '../model/usuario.model';
 import { TipoUsuario } from '../types';
 
@@ -68,8 +68,7 @@ export const registrar = async (dados: any) => {
       logger.warning(`Tentativa de registro com email já existente: ${dados.email_usuario}`, 'auth');
       throw new Error('Email já cadastrado');
     }
-    
-    logger.debug(`Email disponível, validando outros dados`, 'auth');
+      logger.debug(`Email disponível, validando outros dados`, 'auth');
       // Validar tipo de usuário
     const tiposValidos: TipoUsuario[] = [
       TipoUsuario.ESCOLA, 
@@ -92,6 +91,10 @@ export const registrar = async (dados: any) => {
       logger.debug(`Usuário não é do tipo escola, definindo id_escola como null`, 'auth');
       dados.id_escola = null;
     }
+    
+    // Criptografar a senha antes de salvar
+    logger.debug(`Criptografando senha do usuário`, 'auth');
+    dados.senha_usuario = await criptografarSenha(dados.senha_usuario);
     
     logger.debug(`Dados validados, criando novo usuário`, 'auth');
     

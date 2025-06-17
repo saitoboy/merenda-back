@@ -3,6 +3,15 @@ import { Item } from '../types';
 
 const table = 'item';
 
+// Listar todos os itens
+export const listarTodos = async (): Promise<Item[]> => {
+  const itens = await connection(table)
+    .select('*')
+    .orderBy('nome_item');
+  
+  return itens;
+};
+
 // Buscar item por ID
 export const buscarPorId = async (id_item: string): Promise<Item | undefined> => {
   const item = await connection(table)
@@ -51,14 +60,6 @@ export const excluir = async (id_item: string): Promise<void> => {
   await connection(table)
     .where({ id_item })
     .delete();
-};
-
-// Listar todos os itens
-export const listarTodos = async (): Promise<Item[]> => {
-  const itens = await connection(table)
-    .select('*');
-  
-  return itens;
 };
 
 // Buscar itens próximos da validade (em dias)
