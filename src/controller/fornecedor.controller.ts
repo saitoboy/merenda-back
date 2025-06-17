@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as FornecedorService from '../services/fornecedor.service';
+import { logger } from '../utils';
 
 export const listarFornecedores = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -53,18 +54,33 @@ export const buscarFornecedorPorId = async (req: Request, res: Response): Promis
 
 export const criarFornecedor = async (req: Request, res: Response): Promise<void> => {
   try {
+    logger.info('Iniciando criação de novo fornecedor através da API', 'controller');
     const dadosFornecedor = req.body;
     
     // Validações básicas
     if (!dadosFornecedor.nome_fornecedor || !dadosFornecedor.email_fornecedor || !dadosFornecedor.cnpj_fornecedor || !dadosFornecedor.senha_fornecedor) {
+      logger.warning('Tentativa de criar fornecedor com dados incompletos', 'controller');
       res.status(400).json({
         status: 'erro',
         mensagem: 'Nome, email, CNPJ e senha são obrigatórios'
       });
+      return;
     }
     
+    // Validação de WhatsApp
+    if (!dadosFornecedor.whatsapp_fornecedor) {
+      logger.warning('Tentativa de criar fornecedor sem WhatsApp', 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Número de WhatsApp é obrigatório'
+      });
+      return;
+    }
+    
+    logger.debug(`Processando criação do fornecedor: ${dadosFornecedor.nome_fornecedor}`, 'controller');
     const resultado = await FornecedorService.criarFornecedor(dadosFornecedor);
     
+    logger.success(`Fornecedor ${dadosFornecedor.nome_fornecedor} criado com sucesso via API`, 'controller');
     res.status(201).json({
       status: 'sucesso',
       mensagem: 'Fornecedor criado com sucesso',
@@ -72,12 +88,15 @@ export const criarFornecedor = async (req: Request, res: Response): Promise<void
     });
   } catch (error) {
     if (error instanceof Error) {
+      logger.error(`Erro ao criar fornecedor: ${error.message}`, 'controller');
       res.status(400).json({
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
+    logger.error('Erro interno do servidor ao criar fornecedor', 'controller');
     res.status(500).json({
       status: 'erro',
       mensagem: 'Erro interno do servidor'
@@ -170,3 +189,51 @@ export const loginFornecedor = async (req: Request, res: Response): Promise<void
     });
   }
 };
+
+// Método para importação em lote de fornecedores
+export const importarFornecedores = async (req: Request, res: Response): Promise<void> => {
+  try {
+    logger.info('Recebendo solicitação para importação em massa de fornecedores', 'controller');
+    const dados = req.body;
+    
+    // Validar se os dados estão em formato de array
+    if (!Array.isArray(dados)) {
+      logger.warning('Dados para importação não estão em formato de array', 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'O formato dos dados deve ser um array de fornecedores'
+      });
+      return;
+    }
+    
+    logger.debug(`Iniciando processamento de ${dados.length} fornecedores`, 'controller');
+    
+    // Chamar o serviço para importar os fornecedores
+    const resultado = await FornecedorService.importarFornecedores(dados);
+    
+    logger.success(`Importação concluída: ${resultado.sucesso} fornecedores importados com sucesso, ${resultado.falhas} falhas`, 'controller');
+    
+    res.status(201).json({
+      status: 'sucesso',
+      mensagem: `Importação concluída: ${resultado.sucesso} fornecedores importados com sucesso, ${resultado.falhas} falhas`,
+      dados: resultado
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro durante a importação: ${error.message}`, 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    logger.error('Erro interno do servidor durante a importação', 'controller');
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor durante a importação'
+    });
+  }
+};
+
+// As funções já estão sendo exportadas individualmente
