@@ -6,6 +6,12 @@ Backend para o sistema de gestão de merenda escolar "Merenda Smart Flow".
 
 O Merenda Smart Flow é um sistema de gestão para merenda escolar que conecta escolas, nutricionistas e fornecedores em uma única plataforma integrada. O sistema permite o controle de estoque, geração de pedidos, gestão de fornecedores e relatórios de consumo de alimentos nas escolas.
 
+Backend para o sistema de gestão de merenda escolar "Merenda Smart Flow".
+
+## Sobre o Projeto
+
+O Merenda Smart Flow é um sistema de gestão para merenda escolar que conecta escolas, nutricionistas e fornecedores em uma única plataforma integrada. O sistema permite o controle de estoque, geração de pedidos, gestão de fornecedores e relatórios de consumo de alimentos nas escolas.
+
 ## Estrutura do Banco de Dados
 
 O sistema utiliza um banco de dados PostgreSQL com as seguintes tabelas:

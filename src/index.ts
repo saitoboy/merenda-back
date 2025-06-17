@@ -1,20 +1,34 @@
 import 'dotenv/config';
 import express, { Request, Response } from "express";
 import cors from "cors";
-
 import { AddressInfo } from "net";
 import connection from "./connection";
+
+// Importação das rotas
+import authRouter from './routes/auth.routes';
+import escolaRouter from './routes/escola.routes';
+import estoqueRouter from './routes/estoque.routes';
+import fornecedorRouter from './routes/fornecedor.routes';
+import pedidoRouter from './routes/pedido.routes';
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
+// Rota raiz
 app.get("/", async (req: Request, res: Response) => {
   try {
-    res.send("Hello, world!");
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'API Merenda Smart Flow v1.0',
+      documentacao: '/docs'
+    });
   } catch (e: any) {
-    res.send(e.sqlMessage || e.message);
+    res.status(500).json({
+      status: 'erro',
+      mensagem: e.message || 'Erro interno do servidor'
+    });
   }
 });
 
@@ -38,11 +52,18 @@ app.get("/test-connection", async (req: Request, res: Response) => {
   }
 });
 
+// Registrar as rotas
+app.use('/auth', authRouter);
+app.use('/escolas', escolaRouter);
+app.use('/estoque', estoqueRouter);
+app.use('/fornecedores', fornecedorRouter);
+app.use('/pedidos', pedidoRouter);
+
 const server = app.listen(process.env.PORT || 3003, () => {
   if (server) {
     const address = server.address() as AddressInfo;
-    console.log(`Server is running in http://localhost:${address.port}`);
+    console.log(`Servidor rodando em http://localhost:${address.port}`);
   } else {
-    console.error(`Failure upon starting server.`);
+    console.error(`Falha ao iniciar o servidor.`);
   }
 });

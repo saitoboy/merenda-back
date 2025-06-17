@@ -2,7 +2,9 @@
 
 // Tipos de usuário
 export enum TipoUsuario {
+  ADMIN = 'admin',
   ESCOLA = 'escola',
+  GESTOR_ESCOLAR = 'gestor_escolar',
   NUTRICIONISTA = 'nutricionista',
   FORNECEDOR = 'fornecedor'
 }
