@@ -17,7 +17,9 @@ const app = express();
 
 logger.info('Inicializando Merenda Smart Flow API', 'server');
 
-app.use(express.json());
+// Aumentando o limite do tamanho do payload para 10MB
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Configuração detalhada do CORS
 app.use(cors({
   origin: '*', // Permite todas as origens em ambiente de desenvolvimento

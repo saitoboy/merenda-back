@@ -125,6 +125,10 @@ Para instruções sobre como executar e configurar o servidor da API, consulte o
 
 Para informações detalhadas sobre como importar dados em massa (escolas, fornecedores, itens e valores ideais), consulte a [Documentação de Importação](./importacao.md).
 
+## Gestão de Valores Ideais
+
+Para entender o conceito e as melhores práticas para a gestão de valores ideais no sistema, consulte a [Documentação de Gestão de Valores Ideais](../gestao_valores_ideais.md).
+
 ## Rotas de Teste e Desenvolvimento
 
 Para informações sobre rotas úteis durante o desenvolvimento e testes do sistema, consulte a [Documentação de Rotas de Teste](./rotas_teste.md).

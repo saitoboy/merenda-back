@@ -225,19 +225,11 @@ A documentação completa da API está disponível na pasta `docs/api` e contém
 - [Rotas de Teste](./docs/api/rotas_teste.md)
 - [Troubleshooting](./docs/api/troubleshooting.md)
 
-## Documentação das Rotas para Gestão de Valores Ideais
+### Documentação de Conceitos e Boas Práticas
 
-### Visão Geral
+- [Gestão de Valores Ideais de Estoque](./docs/gestao_valores_ideais.md)
 
-A gestão de valores ideais permite que a nutricionista defina, para cada escola e item, qual a quantidade ideal que deve ser mantida em estoque. Isso facilita o processo de tomada de decisão sobre quais itens precisam ser repostos.
-
-### Modelo de Dados
-
-Na tabela `estoque`, o campo `numero_ideal` armazena essa informação para cada combinação de escola e item. Um estoque abaixo do ideal pode ser identificado quando `quantidade_item < numero_ideal`.
-
-### Endpoints Disponíveis
-
-#### 1. Definir Valores Ideais em Lote
+## Outras Informações
 
 ```
 POST /estoque/ideais
