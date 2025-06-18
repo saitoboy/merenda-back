@@ -206,3 +206,228 @@ Foram criados tipos e interfaces TypeScript para todas as entidades do sistema, 
 ## Notas de Desenvolvimento
 
 O sistema foi projetado para se integrar com o frontend Merenda Smart Flow, permitindo uma gestão completa do fluxo de merenda escolar, desde o controle de estoque até a geração de pedidos e relatórios.
+
+## Documentação Completa da API
+
+A documentação completa da API está disponível na pasta `docs/api` e contém informações detalhadas sobre todas as rotas disponíveis, exemplos de requisição e resposta, e guias para uso correto da API.
+
+### Principais Seções da Documentação
+
+- [Visão Geral e Índice](./docs/api/README.md)
+- [Autenticação](./docs/api/autenticacao.md)
+- [Escolas](./docs/api/escolas.md)
+- [Estoque](./docs/api/estoque.md)
+- [Fornecedores](./docs/api/fornecedores.md)
+- [Itens](./docs/api/itens.md)
+- [Pedidos](./docs/api/pedidos.md)
+- [Usuários](./docs/api/usuarios.md)
+- [Importação em Massa](./docs/api/importacao.md)
+- [Rotas de Teste](./docs/api/rotas_teste.md)
+- [Troubleshooting](./docs/api/troubleshooting.md)
+
+## Documentação das Rotas para Gestão de Valores Ideais
+
+### Visão Geral
+
+A gestão de valores ideais permite que a nutricionista defina, para cada escola e item, qual a quantidade ideal que deve ser mantida em estoque. Isso facilita o processo de tomada de decisão sobre quais itens precisam ser repostos.
+
+### Modelo de Dados
+
+Na tabela `estoque`, o campo `numero_ideal` armazena essa informação para cada combinação de escola e item. Um estoque abaixo do ideal pode ser identificado quando `quantidade_item < numero_ideal`.
+
+### Endpoints Disponíveis
+
+#### 1. Definir Valores Ideais em Lote
+
+```
+POST /estoque/ideais
+```
+
+Permite definir valores ideais para múltiplas combinações de escola e item de uma vez.
+
+**Permissões**: Nutricionista, Admin
+
+**Corpo da requisição**:
+```json
+{
+  "ideais": [
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-1",
+      "numero_ideal": 6
+    },
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-2",
+      "numero_ideal": 3
+    },
+    {
+      "id_escola": "uuid-escola-2",
+      "id_item": "uuid-item-1",
+      "numero_ideal": 10
+    }
+  ]
+}
+```
+
+**Resposta (sucesso)**:
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Valores ideais definidos com sucesso",
+  "dados": {
+    "mensagem": "3 valores ideais processados com sucesso",
+    "detalhes": [
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-1",
+        "numero_ideal": 6,
+        "acao": "atualizado"
+      },
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-2",
+        "numero_ideal": 3,
+        "acao": "criado"
+      },
+      {
+        "id_escola": "uuid-escola-2",
+        "id_item": "uuid-item-1",
+        "numero_ideal": 10,
+        "acao": "atualizado"
+      }
+    ]
+  }
+}
+```
+
+#### 2. Definir Valores Ideais para uma Escola Específica
+
+```
+POST /estoque/ideais/:id_escola
+```
+
+Permite definir valores ideais para vários itens de uma mesma escola.
+
+**Permissões**: Nutricionista, Admin
+
+**Corpo da requisição**:
+```json
+{
+  "itens_ideais": [
+    { "id_item": "uuid-item-1", "numero_ideal": 6 },
+    { "id_item": "uuid-item-2", "numero_ideal": 3 },
+    { "id_item": "uuid-item-3", "numero_ideal": 2 },
+    { "id_item": "uuid-item-4", "numero_ideal": 10 }
+  ]
+}
+```
+
+**Resposta (sucesso)**:
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Valores ideais definidos com sucesso para a escola uuid-escola-1",
+  "dados": {
+    "mensagem": "4 valores ideais processados com sucesso",
+    "detalhes": [
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-1",
+        "numero_ideal": 6,
+        "acao": "atualizado"
+      },
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-2",
+        "numero_ideal": 3,
+        "acao": "atualizado"
+      },
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-3",
+        "numero_ideal": 2,
+        "acao": "criado"
+      },
+      {
+        "id_escola": "uuid-escola-1",
+        "id_item": "uuid-item-4",
+        "numero_ideal": 10,
+        "acao": "criado"
+      }
+    ]
+  }
+}
+```
+
+#### 3. Atualizar um Valor Ideal Individual
+
+```
+PUT /estoque/numero-ideal/:id_escola/:id_item
+```
+
+Permite atualizar o valor ideal para uma combinação específica de escola e item.
+
+**Permissões**: Nutricionista, Gestor Escolar, Admin
+
+**Corpo da requisição**:
+```json
+{
+  "numero_ideal": 5
+}
+```
+
+**Resposta (sucesso)**:
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Número ideal atualizado com sucesso",
+  "dados": {
+    "mensagem": "Número ideal atualizado com sucesso"
+  }
+}
+```
+
+#### 4. Consultar Itens Abaixo do Ideal
+
+```
+GET /estoque/escola/:id_escola/abaixo-ideal
+```
+
+Retorna todos os itens cujo estoque está abaixo do valor ideal definido.
+
+**Resposta (sucesso)**:
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Itens abaixo do ideal listados com sucesso",
+  "dados": [
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-1",
+      "quantidade_item": 2,
+      "numero_ideal": 6,
+      "nome_item": "Arroz Integral",
+      "unidade_medida": "Kg",
+      "validade": "2023-12-31",
+      "preco_item": 7.50
+    }
+  ]
+}
+```
+
+### Importando Valores Ideais de uma Planilha
+
+Para facilitar a migração de dados, é possível converter uma planilha Excel para o formato JSON aceito pela API. O procedimento recomendado é:
+
+1. Exportar a planilha como CSV
+2. Converter o CSV para JSON usando uma ferramenta online ou script
+3. Formatar o JSON conforme o modelo esperado pela API
+4. Enviar os dados para o endpoint apropriado
+
+### Comportamento do Sistema
+
+- Se um item não existir previamente no estoque de uma escola, um novo registro será criado com `quantidade_item = 0` e o valor ideal especificado.
+- Se um item já existir no estoque, apenas o valor ideal será atualizado.
+- O sistema valida a existência de escolas e itens antes de criar ou atualizar registros.
+- O processo é transacional: ou todos os registros são processados com sucesso, ou nenhum é alterado.

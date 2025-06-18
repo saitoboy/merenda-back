@@ -206,3 +206,100 @@ export const obterMetricas = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+// Definir valores ideais em lote
+export const definirValoresIdeaisEmLote = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { ideais } = req.body;
+    
+    // Validação básica
+    if (!ideais || !Array.isArray(ideais) || ideais.length === 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Formato inválido. Esperado um array de itens com id_escola, id_item e numero_ideal'
+      });
+      return;
+    }
+    
+    // Verificação de cada item do array
+    for (const item of ideais) {
+      if (!item.id_escola || !item.id_item || (item.numero_ideal === undefined)) {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Cada item deve conter id_escola, id_item e numero_ideal'
+        });
+        return;
+      }
+    }
+    
+    const resultado = await EstoqueService.definirValoresIdeaisEmLote(ideais);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Valores ideais definidos com sucesso',
+      dados: resultado
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+// Definir valores ideais para uma escola específica
+export const definirIdeaisPorEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id_escola } = req.params;
+    const { itens_ideais } = req.body;
+    
+    // Validação básica
+    if (!itens_ideais || !Array.isArray(itens_ideais) || itens_ideais.length === 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Formato inválido. Esperado um array de itens com id_item e numero_ideal'
+      });
+      return;
+    }
+    
+    // Verificação de cada item do array
+    for (const item of itens_ideais) {
+      if (!item.id_item || (item.numero_ideal === undefined)) {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Cada item deve conter id_item e numero_ideal'
+        });
+        return;
+      }
+    }
+    
+    const resultado = await EstoqueService.definirIdeaisPorEscola(id_escola, itens_ideais);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: `Valores ideais definidos com sucesso para a escola ${id_escola}`,
+      dados: resultado
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};

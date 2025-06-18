@@ -119,3 +119,58 @@ export const obterMetricasEstoque = async (id_escola: string) => {
     itens_proximos_validade: proximosValidade?.total || 0
   };
 };
+
+// Definir valores ideais em lote
+export const definirIdeaisEmLote = async (ideais: Array<{id_escola: string, id_item: string, numero_ideal: number}>) => {
+  // Usar transaction para garantir que todas as operações tenham sucesso
+  return await connection.transaction(async (trx) => {
+    const resultados = [];
+
+    // Para cada item na lista de ideais
+    for (const ideal of ideais) {
+      // Verificar se o item já existe no estoque
+      const itemExistente = await trx(table)
+        .where({
+          id_escola: ideal.id_escola,
+          id_item: ideal.id_item
+        })
+        .first();
+
+      if (itemExistente) {
+        // Atualizar apenas o número ideal
+        await trx(table)
+          .where({
+            id_escola: ideal.id_escola,
+            id_item: ideal.id_item
+          })
+          .update({
+            numero_ideal: ideal.numero_ideal
+          });
+          
+        resultados.push({
+          id_escola: ideal.id_escola,
+          id_item: ideal.id_item,
+          numero_ideal: ideal.numero_ideal,
+          acao: 'atualizado'
+        });
+      } else {
+        // Criar novo registro de estoque com quantidade inicial zero
+        await trx(table).insert({
+          id_escola: ideal.id_escola,
+          id_item: ideal.id_item,
+          quantidade_item: 0, // Inicia com quantidade zero
+          numero_ideal: ideal.numero_ideal
+        });
+        
+        resultados.push({
+          id_escola: ideal.id_escola,
+          id_item: ideal.id_item,
+          numero_ideal: ideal.numero_ideal,
+          acao: 'criado'
+        });
+      }
+    }
+
+    return resultados;
+  });
+};

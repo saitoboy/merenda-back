@@ -178,3 +178,69 @@ export const obterMetricas = async (idEscola: string) => {
     }
   }
 };
+
+// Definir valores ideais em lote
+export const definirValoresIdeaisEmLote = async (ideais: Array<{id_escola: string, id_item: string, numero_ideal: number}>) => {
+  try {
+    // Validar cada item do lote
+    for (const ideal of ideais) {
+      // Verificar se a escola existe
+      const escola = await EscolaModel.buscarPorId(ideal.id_escola);
+      if (!escola) {
+        throw new Error(`Escola com ID ${ideal.id_escola} não encontrada`);
+      }
+      
+      // Verificar se o item existe
+      const item = await ItemModel.buscarPorId(ideal.id_item);
+      if (!item) {
+        throw new Error(`Item com ID ${ideal.id_item} não encontrado`);
+      }
+      
+      // Validar número ideal
+      if (ideal.numero_ideal < 0) {
+        throw new Error(`Número ideal deve ser maior ou igual a zero para o item ${item.nome_item}`);
+      }
+    }
+    
+    // Processar o lote
+    const resultados = await EstoqueModel.definirIdeaisEmLote(ideais);
+    
+    return {
+      mensagem: `${resultados.length} valores ideais processados com sucesso`,
+      detalhes: resultados
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Erro ao definir valores ideais em lote: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao definir valores ideais em lote');
+    }
+  }
+};
+
+// Definir valores ideais para uma escola específica
+export const definirIdeaisPorEscola = async (id_escola: string, itens_ideais: Array<{id_item: string, numero_ideal: number}>) => {
+  try {
+    // Verificar se a escola existe
+    const escola = await EscolaModel.buscarPorId(id_escola);
+    if (!escola) {
+      throw new Error('Escola não encontrada');
+    }
+    
+    // Transformar os dados para o formato padrão
+    const ideais = itens_ideais.map(item => ({
+      id_escola,
+      id_item: item.id_item,
+      numero_ideal: item.numero_ideal
+    }));
+    
+    // Usar a função de definir ideais em lote
+    return await definirValoresIdeaisEmLote(ideais);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Erro ao definir valores ideais para escola: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao definir valores ideais para escola');
+    }
+  }
+};
