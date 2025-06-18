@@ -55,6 +55,7 @@ export interface Item {
 export interface Estoque {
   id_escola: string; // UUID
   id_item: string; // UUID
+  segmento_estoque: string; // Segmento da escola
   quantidade_item: number;
   numero_ideal: number;
 }

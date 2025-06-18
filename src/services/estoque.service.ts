@@ -47,17 +47,17 @@ export const buscarItensAbaixoIdeal = async (idEscola: string) => {
   }
 };
 
-export const atualizarQuantidade = async (idEscola: string, idItem: string, quantidade: number) => {
+export const atualizarQuantidade = async (idEscola: string, idItem: string, quantidade: number, segmento: string = 'escola') => {
   try {
     // Verificar se o item existe no estoque da escola
-    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem);
+    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem, segmento);
     
     if (!estoqueItem) {
-      throw new Error('Item não encontrado no estoque desta escola');
+      throw new Error('Item não encontrado no estoque desta escola para o segmento especificado');
     }
     
     // Atualizar a quantidade
-    await EstoqueModel.atualizarQuantidade(idEscola, idItem, quantidade);
+    await EstoqueModel.atualizarQuantidade(idEscola, idItem, quantidade, segmento);
     
     return {
       mensagem: 'Quantidade atualizada com sucesso'
@@ -71,17 +71,17 @@ export const atualizarQuantidade = async (idEscola: string, idItem: string, quan
   }
 };
 
-export const atualizarNumeroIdeal = async (idEscola: string, idItem: string, numeroIdeal: number) => {
+export const atualizarNumeroIdeal = async (idEscola: string, idItem: string, numeroIdeal: number, segmento: string = 'escola') => {
   try {
     // Verificar se o item existe no estoque da escola
-    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem);
+    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem, segmento);
     
     if (!estoqueItem) {
-      throw new Error('Item não encontrado no estoque desta escola');
+      throw new Error('Item não encontrado no estoque desta escola para o segmento especificado');
     }
     
     // Atualizar o número ideal
-    await EstoqueModel.atualizarNumeroIdeal(idEscola, idItem, numeroIdeal);
+    await EstoqueModel.atualizarNumeroIdeal(idEscola, idItem, numeroIdeal, segmento);
     
     return {
       mensagem: 'Número ideal atualizado com sucesso'
@@ -133,17 +133,17 @@ export const adicionarItemAoEstoque = async (dados: Estoque) => {
   }
 };
 
-export const removerItemDoEstoque = async (idEscola: string, idItem: string) => {
+export const removerItemDoEstoque = async (idEscola: string, idItem: string, segmento: string = 'escola') => {
   try {
     // Verificar se o item existe no estoque da escola
-    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem);
+    const estoqueItem = await EstoqueModel.buscar(idEscola, idItem, segmento);
     
     if (!estoqueItem) {
-      throw new Error('Item não encontrado no estoque desta escola');
+      throw new Error('Item não encontrado no estoque desta escola para o segmento especificado');
     }
     
     // Remover o item do estoque
-    await EstoqueModel.remover(idEscola, idItem);
+    await EstoqueModel.remover(idEscola, idItem, segmento);
     
     return {
       mensagem: 'Item removido do estoque com sucesso'
@@ -180,7 +180,7 @@ export const obterMetricas = async (idEscola: string) => {
 };
 
 // Definir valores ideais em lote
-export const definirValoresIdeaisEmLote = async (ideais: Array<{id_escola: string, id_item: string, numero_ideal: number}>) => {
+export const definirValoresIdeaisEmLote = async (ideais: Array<{id_escola: string, id_item: string, segmento?: string, numero_ideal: number}>) => {
   try {
     // Validar cada item do lote
     for (const ideal of ideais) {
@@ -200,10 +200,26 @@ export const definirValoresIdeaisEmLote = async (ideais: Array<{id_escola: strin
       if (ideal.numero_ideal < 0) {
         throw new Error(`Número ideal deve ser maior ou igual a zero para o item ${item.nome_item}`);
       }
+      
+      // Validar segmento se foi especificado
+      if (ideal.segmento) {
+        const segmentos = escola.segmento_escola || ["escola"];
+        if (!segmentos.includes(ideal.segmento)) {
+          throw new Error(`Segmento "${ideal.segmento}" não está cadastrado para a escola ${escola.nome_escola}`);
+        }
+      }
     }
     
+    // Transformar os dados para incluir segmento_estoque
+    const ideaisProcessados = ideais.map(ideal => ({
+      id_escola: ideal.id_escola,
+      id_item: ideal.id_item,
+      segmento_estoque: ideal.segmento || 'escola',
+      numero_ideal: ideal.numero_ideal
+    }));
+    
     // Processar o lote
-    const resultados = await EstoqueModel.definirIdeaisEmLote(ideais);
+    const resultados = await EstoqueModel.definirIdeaisEmLote(ideaisProcessados);
     
     return {
       mensagem: `${resultados.length} valores ideais processados com sucesso`,
@@ -219,7 +235,7 @@ export const definirValoresIdeaisEmLote = async (ideais: Array<{id_escola: strin
 };
 
 // Definir valores ideais para uma escola específica
-export const definirIdeaisPorEscola = async (id_escola: string, itens_ideais: Array<{id_item: string, numero_ideal: number}>) => {
+export const definirIdeaisPorEscola = async (id_escola: string, itens_ideais: Array<{id_item: string, segmento?: string, numero_ideal: number}>) => {
   try {
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(id_escola);
@@ -227,10 +243,21 @@ export const definirIdeaisPorEscola = async (id_escola: string, itens_ideais: Ar
       throw new Error('Escola não encontrada');
     }
     
+    // Validar segmentos se especificados
+    for (const item of itens_ideais) {
+      if (item.segmento) {
+        const segmentos = escola.segmento_escola || ["escola"];
+        if (!segmentos.includes(item.segmento)) {
+          throw new Error(`Segmento "${item.segmento}" não está cadastrado para esta escola`);
+        }
+      }
+    }
+    
     // Transformar os dados para o formato padrão
     const ideais = itens_ideais.map(item => ({
       id_escola,
       id_item: item.id_item,
+      segmento: item.segmento || 'escola',
       numero_ideal: item.numero_ideal
     }));
     

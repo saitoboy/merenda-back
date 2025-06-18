@@ -56,16 +56,17 @@ export const listarItensAbaixoIdeal = async (req: Request, res: Response): Promi
 export const atualizarQuantidade = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola, id_item } = req.params;
-    const { quantidade_item } = req.body;
+    const { quantidade_item, segmento } = req.body;
     
     if (!quantidade_item && quantidade_item !== 0) {
       res.status(400).json({
         status: 'erro',
         mensagem: 'Quantidade é obrigatória'
       });
+      return;
     }
     
-    const resultado = await EstoqueService.atualizarQuantidade(id_escola, id_item, quantidade_item);
+    const resultado = await EstoqueService.atualizarQuantidade(id_escola, id_item, quantidade_item, segmento || 'escola');
     
     res.status(200).json({
       status: 'sucesso',
@@ -78,6 +79,7 @@ export const atualizarQuantidade = async (req: Request, res: Response): Promise<
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -90,16 +92,17 @@ export const atualizarQuantidade = async (req: Request, res: Response): Promise<
 export const atualizarNumeroIdeal = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola, id_item } = req.params;
-    const { numero_ideal } = req.body;
+    const { numero_ideal, segmento } = req.body;
     
     if (!numero_ideal && numero_ideal !== 0) {
       res.status(400).json({
         status: 'erro',
         mensagem: 'Número ideal é obrigatório'
       });
+      return;
     }
     
-    const resultado = await EstoqueService.atualizarNumeroIdeal(id_escola, id_item, numero_ideal);
+    const resultado = await EstoqueService.atualizarNumeroIdeal(id_escola, id_item, numero_ideal, segmento || 'escola');
     
     res.status(200).json({
       status: 'sucesso',
@@ -112,6 +115,7 @@ export const atualizarNumeroIdeal = async (req: Request, res: Response): Promise
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -158,8 +162,13 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
 export const removerItemDoEstoque = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola, id_item } = req.params;
+    const { segmento } = req.query;
     
-    const resultado = await EstoqueService.removerItemDoEstoque(id_escola, id_item);
+    const resultado = await EstoqueService.removerItemDoEstoque(
+      id_escola, 
+      id_item, 
+      typeof segmento === 'string' ? segmento : 'escola'
+    );
     
     res.status(200).json({
       status: 'sucesso',
@@ -172,6 +181,7 @@ export const removerItemDoEstoque = async (req: Request, res: Response): Promise
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -230,6 +240,15 @@ export const definirValoresIdeaisEmLote = async (req: Request, res: Response): P
         });
         return;
       }
+      
+      // Segmento é opcional, mas se estiver presente não pode ser vazio
+      if (item.segmento !== undefined && item.segmento.trim() === '') {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Segmento não pode ser uma string vazia'
+        });
+        return;
+      }
     }
     
     const resultado = await EstoqueService.definirValoresIdeaisEmLote(ideais);
@@ -276,6 +295,15 @@ export const definirIdeaisPorEscola = async (req: Request, res: Response): Promi
         res.status(400).json({
           status: 'erro',
           mensagem: 'Cada item deve conter id_item e numero_ideal'
+        });
+        return;
+      }
+      
+      // Segmento é opcional, mas se estiver presente não pode ser vazio
+      if (item.segmento !== undefined && item.segmento.trim() === '') {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Segmento não pode ser uma string vazia'
         });
         return;
       }

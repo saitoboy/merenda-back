@@ -2,15 +2,27 @@
 
 Esta seção contém as rotas relacionadas à gestão de estoque no sistema Merenda Smart Flow.
 
+## Conceito de Segmentos de Estoque
+
+O sistema permite gerenciar estoques separados por segmento escolar dentro de uma mesma escola. Isso possibilita que uma escola mantenha controle de estoques distintos para diferentes segmentos, como "infantil", "fundamental" e o estoque geral da "escola".
+
+- Cada item no estoque de uma escola pode existir em múltiplos segmentos, cada um com sua própria quantidade e valor ideal
+- O segmento padrão é "escola", usado quando nenhum segmento específico é informado
+- Os segmentos válidos para uma escola são definidos no seu cadastro, no campo `segmento_escola`
+- As rotas de API aceitam o parâmetro `segmento` para especificar o segmento de estoque a ser manipulado
+
 ## Listar Estoque por Escola
 
 Retorna todos os itens em estoque de uma determinada escola.
 
-**URL**: `/estoque/escola/:id_escola`
+**URL**: `/estoque/escola/:id_escola?segmento=segmento_valor`
 
 **Método**: `GET`
 
 **Autenticação**: Opcional
+
+**Parâmetros de Consulta**:
+- `segmento` (opcional) - Filtra os resultados por segmento específico. Se não for fornecido, retorna todos os segmentos.
 
 ### Resposta de Sucesso
 
@@ -24,6 +36,7 @@ Retorna todos os itens em estoque de uma determinada escola.
     {
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-1",
+      "segmento_estoque": "escola",
       "quantidade_item": 15,
       "numero_ideal": 20,
       "nome_item": "Arroz Integral",
@@ -34,6 +47,7 @@ Retorna todos os itens em estoque de uma determinada escola.
     {
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-2",
+      "segmento_estoque": "infantil",
       "quantidade_item": 8,
       "numero_ideal": 10,
       "nome_item": "Feijão Carioca",
@@ -62,11 +76,14 @@ Retorna todos os itens em estoque de uma determinada escola.
 
 Retorna todos os itens cujo estoque está abaixo do número ideal definido.
 
-**URL**: `/estoque/escola/:id_escola/abaixo-ideal`
+**URL**: `/estoque/escola/:id_escola/abaixo-ideal?segmento=segmento_valor`
 
 **Método**: `GET`
 
 **Autenticação**: Opcional
+
+**Parâmetros de Consulta**:
+- `segmento` (opcional) - Filtra os resultados por segmento específico. Se não for fornecido, retorna todos os segmentos.
 
 ### Resposta de Sucesso
 
@@ -80,12 +97,24 @@ Retorna todos os itens cujo estoque está abaixo do número ideal definido.
     {
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-1",
+      "segmento_estoque": "escola",
       "quantidade_item": 15,
       "numero_ideal": 20,
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
       "validade": "2023-12-31",
       "preco_item": 7.50
+    },
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-3",
+      "segmento_estoque": "infantil",
+      "quantidade_item": 5,
+      "numero_ideal": 12,
+      "nome_item": "Leite em Pó",
+      "unidade_medida": "Kg",
+      "validade": "2023-11-30",
+      "preco_item": 22.90
     }
   ]
 }
@@ -97,11 +126,14 @@ Retorna todos os itens cujo estoque está abaixo do número ideal definido.
 
 Retorna métricas e estatísticas sobre o estoque de uma escola.
 
-**URL**: `/estoque/escola/:id_escola/metricas`
+**URL**: `/estoque/escola/:id_escola/metricas?segmento=segmento_valor`
 
 **Método**: `GET`
 
 **Autenticação**: Opcional
+
+**Parâmetros de Consulta**:
+- `segmento` (opcional) - Filtra as métricas por segmento específico. Se não for fornecido, considera todos os segmentos.
 
 ### Resposta de Sucesso
 
@@ -137,7 +169,8 @@ Atualiza a quantidade em estoque de um item em uma escola.
 
 ```json
 {
-  "quantidade_item": 25
+  "quantidade_item": 25,
+  "segmento": "escola"  /* opcional, padrão é "escola" */
 }
 ```
 
@@ -191,7 +224,8 @@ Atualiza o número ideal de um item em uma escola.
 
 ```json
 {
-  "numero_ideal": 30
+  "numero_ideal": 30,
+  "segmento": "escola"  /* opcional, padrão é "escola" */
 }
 ```
 
@@ -249,12 +283,14 @@ Define valores ideais para múltiplas combinações de escola e item de uma vez.
     {
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-1",
-      "numero_ideal": 25
+      "numero_ideal": 25,
+      "segmento": "escola"
     },
     {
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-2",
-      "numero_ideal": 15
+      "numero_ideal": 15,
+      "segmento": "infantil"
     },
     {
       "id_escola": "uuid-escola-2",
@@ -279,18 +315,21 @@ Define valores ideais para múltiplas combinações de escola e item de uma vez.
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-1",
+        "segmento_estoque": "escola",
         "numero_ideal": 25,
         "acao": "atualizado"
       },
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-2",
+        "segmento_estoque": "infantil",
         "numero_ideal": 15,
         "acao": "atualizado"
       },
       {
         "id_escola": "uuid-escola-2",
         "id_item": "uuid-item-1",
+        "segmento_estoque": "escola",
         "numero_ideal": 20,
         "acao": "criado"
       }
@@ -327,10 +366,10 @@ Define valores ideais para múltiplos itens de uma mesma escola.
 ```json
 {
   "itens_ideais": [
-    { "id_item": "uuid-item-1", "numero_ideal": 30 },
-    { "id_item": "uuid-item-2", "numero_ideal": 20 },
+    { "id_item": "uuid-item-1", "numero_ideal": 30, "segmento": "escola" },
+    { "id_item": "uuid-item-2", "numero_ideal": 20, "segmento": "infantil" },
     { "id_item": "uuid-item-3", "numero_ideal": 15 },
-    { "id_item": "uuid-item-4", "numero_ideal": 25 }
+    { "id_item": "uuid-item-4", "numero_ideal": 25, "segmento": "fundamental" }
   ]
 }
 ```
@@ -349,24 +388,28 @@ Define valores ideais para múltiplos itens de uma mesma escola.
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-1",
+        "segmento_estoque": "escola",
         "numero_ideal": 30,
         "acao": "atualizado"
       },
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-2",
+        "segmento_estoque": "infantil",
         "numero_ideal": 20,
         "acao": "atualizado"
       },
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-3",
+        "segmento_estoque": "escola",
         "numero_ideal": 15,
         "acao": "atualizado"
       },
       {
         "id_escola": "uuid-escola-1",
         "id_item": "uuid-item-4",
+        "segmento_estoque": "fundamental",
         "numero_ideal": 25,
         "acao": "criado"
       }
@@ -414,7 +457,8 @@ Adiciona um novo item ao estoque de uma escola.
   "id_escola": "uuid-escola-1",
   "id_item": "uuid-item-5",
   "quantidade_item": 10,
-  "numero_ideal": 15
+  "numero_ideal": 15,
+  "segmento_estoque": "infantil"
 }
 ```
 
@@ -427,7 +471,14 @@ Adiciona um novo item ao estoque de uma escola.
   "status": "sucesso",
   "mensagem": "Item adicionado ao estoque com sucesso",
   "dados": {
-    "mensagem": "Item adicionado ao estoque com sucesso"
+    "mensagem": "Item adicionado ao estoque com sucesso",
+    "item": {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-5",
+      "segmento_estoque": "infantil",
+      "quantidade_item": 10,
+      "numero_ideal": 15
+    }
   }
 }
 ```
@@ -474,11 +525,14 @@ Adiciona um novo item ao estoque de uma escola.
 
 Remove um item do estoque de uma escola.
 
-**URL**: `/estoque/:id_escola/:id_item`
+**URL**: `/estoque/:id_escola/:id_item?segmento=segmento_valor`
 
 **Método**: `DELETE`
 
 **Autenticação**: Requerida (Admin, Gestor Escolar)
+
+**Parâmetros de Consulta**:
+- `segmento` (opcional) - Define o segmento do estoque. Se não for fornecido, usa o valor padrão "escola".
 
 ### Resposta de Sucesso
 
@@ -511,3 +565,48 @@ Remove um item do estoque de uma escola.
 - Quando novos itens são adicionados apenas via gestão de valores ideais, sua quantidade é inicializada como zero
 - Ao definir valores ideais em lote, o sistema cria automaticamente registros de estoque para combinações de escola-item que não existiam
 - O valor `numero_ideal` é usado para identificar quando o estoque está baixo e pode gerar alertas ou sugestões de pedidos
+- O campo `segmento_estoque` permite controlar estoques separados por segmento (ex: "infantil", "fundamental", "escola")
+- Quando o `segmento_estoque` não é especificado nas requisições, o sistema usa o valor padrão "escola"
+- Os segmentos válidos para uma escola são definidos no campo `segmento_escola` no cadastro da escola
+- A chave primária do estoque agora é composta por (id_escola, id_item, segmento_estoque)
+
+## Exemplos de Uso com Segmentos
+
+### Consultando o estoque de um segmento específico
+
+```
+GET /estoque/escola/uuid-escola-1?segmento=infantil
+```
+
+### Atualizando a quantidade de um item em um segmento específico
+
+```
+PUT /estoque/quantidade/uuid-escola-1/uuid-item-1
+```
+```json
+{
+  "quantidade_item": 25,
+  "segmento": "fundamental"
+}
+```
+
+### Definindo valores ideais para diferentes segmentos em uma mesma escola
+
+```
+POST /estoque/ideais/uuid-escola-1
+```
+```json
+{
+  "itens_ideais": [
+    { "id_item": "uuid-item-1", "numero_ideal": 30, "segmento": "escola" },
+    { "id_item": "uuid-item-1", "numero_ideal": 15, "segmento": "infantil" },
+    { "id_item": "uuid-item-1", "numero_ideal": 20, "segmento": "fundamental" }
+  ]
+}
+```
+
+### Removendo um item de um segmento específico
+
+```
+DELETE /estoque/uuid-escola-1/uuid-item-1?segmento=infantil
+```
