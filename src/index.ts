@@ -117,10 +117,13 @@ logger.debug('Rotas de itens registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 
-const server = app.listen(process.env.PORT || 3000, () => {
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
   if (server) {
-    const address = server.address() as AddressInfo;
-    logger.success(`Servidor rodando em http://localhost:${address.port}`, 'server');
+    const address = server.address();
+    const port = typeof address === 'string' ? PORT : address ? address.port : PORT;
+    
+    logger.success(`Servidor rodando em http://localhost:${port}`, 'server');
     logger.info('Para testar a API, acesse a rota raiz no navegador ou use uma ferramenta como Thunder Client', 'server');
     logger.info('Pressione CTRL+C para encerrar o servidor', 'server');
   } else {
