@@ -431,3 +431,52 @@ Retorna as informações do usuário autenticado.
 ```
 
 ---
+
+## Matriz de Permissões por Tipo de Usuário
+
+Esta seção detalha as permissões de acesso a recursos do sistema por tipo de usuário.
+
+### Escolas
+
+| Endpoint | Método | Admin | Nutricionista | Gestor Escolar |
+|----------|--------|:-----:|:-------------:|:--------------:|
+| `/escolas` | GET | ✅ | ✅ | ✅ |
+| `/escolas/:id` | GET | ✅ | ✅ | ✅ |
+| `/escolas` | POST | ✅ | ❌ | ❌ |
+| `/escolas/:id` | PUT | ✅ | ❌ | ✅ |
+| `/escolas/:id` | DELETE | ✅ | ❌ | ❌ |
+| `/escolas/importar` | POST | ✅ | ❌ | ❌ |
+
+### Estoque
+
+| Endpoint | Método | Admin | Nutricionista | Gestor Escolar |
+|----------|--------|:-----:|:-------------:|:--------------:|
+| `/estoque/escola/:id_escola` | GET | ✅ | ✅ | ✅ |
+| `/estoque/escola/:id_escola/abaixo-ideal` | GET | ✅ | ✅ | ✅ |
+| `/estoque/escola/:id_escola/metricas` | GET | ✅ | ✅ | ✅ |
+| `/estoque/ideais` | POST | ✅ | ✅ | ❌ |
+| `/estoque/ideais/:id_escola` | POST | ✅ | ✅ | ❌ |
+| `/estoque/adicionar` | POST | ✅ | ❌ | ✅ |
+| `/estoque/quantidade/:id_escola/:id_item` | PUT | ✅ | ✅ | ✅ |
+| `/estoque/numero-ideal/:id_escola/:id_item` | PUT | ✅ | ✅ | ✅ |
+| `/estoque/:id_escola/:id_item` | DELETE | ✅ | ❌ | ✅ |
+
+### Usuários
+
+| Endpoint | Método | Admin | Nutricionista | Gestor Escolar |
+|----------|--------|:-----:|:-------------:|:--------------:|
+| `/usuarios` | GET | ✅ | ❌ | ❌ |
+| `/usuarios/:id` | GET | ✅ | Próprio | Próprio |
+| `/usuarios/escola/:id_escola` | GET | ✅ | ✅ | Própria escola |
+| `/usuarios` | POST | ✅ | ❌ | ❌ |
+| `/usuarios/:id` | PUT | ✅ | Próprio | Próprio |
+| `/usuarios/:id` | DELETE | ✅ | ❌ | ❌ |
+| `/usuarios/perfil` | GET | ✅ | ✅ | ✅ |
+
+> **Legenda:**
+> - ✅ = Acesso permitido
+> - ❌ = Acesso negado
+> - "Próprio" = Apenas acesso ao próprio recurso
+> - "Própria escola" = Apenas acesso aos recursos da própria escola
+
+---
