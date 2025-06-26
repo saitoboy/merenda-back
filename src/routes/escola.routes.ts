@@ -36,7 +36,7 @@ escolaRouter.put('/:id',
 
 escolaRouter.delete('/:id', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EscolaController.excluirEscola
 );
 
