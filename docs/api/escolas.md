@@ -14,7 +14,7 @@ Retorna todas as escolas cadastradas no sistema.
 
 ### Parâmetros da Query
 
-- `segmento` (opcional): Filtra escolas por segmento (ex: "fundamental", "infantil")
+- `segmento` (opcional): Filtra escolas por segmento (ex: "fundamental", "infantil", "medio", "eja", "creche")
 
 ### Resposta de Sucesso
 
@@ -326,6 +326,8 @@ Importa múltiplas escolas a partir de um arquivo ou array JSON.
   }
 }
 ```
+
+
 
 ## Notas de Implementação
 

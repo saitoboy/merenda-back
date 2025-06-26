@@ -30,7 +30,7 @@ export const verificarToken = (token: string): any => {
 
 // Gerenciamento de senhas
 export const criptografarSenha = async (senha: string): Promise<string> => {
-  const saltRounds = 10;
+  const saltRounds = 12;
   return bcrypt.hash(senha, saltRounds);
 };
 

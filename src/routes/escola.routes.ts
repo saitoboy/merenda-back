@@ -6,9 +6,8 @@ import { TipoUsuario } from '../types';
 const escolaRouter = Router();
 
 // Rotas públicas
-escolaRouter.get('/', EscolaController.listarEscolas);
+escolaRouter.get('/', EscolaController.listarEscolas);  // Agora suporta ?segmento=valor
 escolaRouter.get('/:id', EscolaController.buscarEscolaPorId);
-escolaRouter.get('/segmento/:segmento', EscolaController.buscarEscolasPorSegmento);
 
 // Rotas protegidas - apenas administradores e gestores escolares podem criar, atualizar e excluir escolas
 escolaRouter.post('/', 
@@ -31,7 +30,7 @@ escolaRouter.post('/importar-teste',
 
 escolaRouter.put('/:id', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR, TipoUsuario.NUTRICIONISTA]), 
   EscolaController.atualizarEscola
 );
 

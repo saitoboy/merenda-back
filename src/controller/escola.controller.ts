@@ -3,7 +3,24 @@ import * as EscolaService from '../services/escola.service';
 
 export const listarEscolas = async (req: Request, res: Response): Promise<void> => {
   try {
-    const escolas = await EscolaService.buscarTodasEscolas();
+    const { segmento } = req.query;
+    
+    // Se tiver segmento na query, filtra por segmento; caso contrário, lista todas
+    let escolas;
+    if (segmento && typeof segmento === 'string') {
+      escolas = await EscolaService.buscarEscolasPorSegmento(segmento);
+      
+      if (escolas.length === 0) {
+        res.status(200).json({
+          status: 'sucesso',
+          mensagem: 'Nenhuma escola encontrada para o segmento especificado',
+          dados: []
+        });
+        return;
+      }
+    } else {
+      escolas = await EscolaService.buscarTodasEscolas();
+    }
     
     res.status(200).json({
       status: 'sucesso',
