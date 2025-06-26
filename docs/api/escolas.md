@@ -94,7 +94,7 @@ Adiciona uma nova escola ao sistema.
 
 **Método**: `POST`
 
-**Autenticação**: Requerida (Admin)
+**Autenticação**: Requerida (Admin, Nutricionista)
 
 ### Corpo da Requisição
 
@@ -155,7 +155,7 @@ Atualiza os dados de uma escola existente.
 
 **Método**: `PUT`
 
-**Autenticação**: Requerida (Admin)
+**Autenticação**: Requerida (Admin, Gestor Escolar, Nutricionista)
 
 ### Corpo da Requisição
 
@@ -207,7 +207,7 @@ Remove uma escola do sistema.
 
 **Método**: `DELETE`
 
-**Autenticação**: Requerida (Admin)
+**Autenticação**: Requerida (Admin, Nutricionista)
 
 ### Resposta de Sucesso
 

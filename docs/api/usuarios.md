@@ -442,9 +442,9 @@ Esta seção detalha as permissões de acesso a recursos do sistema por tipo de 
 |----------|--------|:-----:|:-------------:|:--------------:|
 | `/escolas` | GET | ✅ | ✅ | ✅ |
 | `/escolas/:id` | GET | ✅ | ✅ | ✅ |
-| `/escolas` | POST | ✅ | ❌ | ❌ |
-| `/escolas/:id` | PUT | ✅ | ❌ | ✅ |
-| `/escolas/:id` | DELETE | ✅ | ❌ | ❌ |
+| `/escolas` | POST | ✅ | ✅ | ❌ |
+| `/escolas/:id` | PUT | ✅ | ✅ | ✅ |
+| `/escolas/:id` | DELETE | ✅ | ✅ | ❌ |
 | `/escolas/importar` | POST | ✅ | ❌ | ❌ |
 
 ### Estoque
