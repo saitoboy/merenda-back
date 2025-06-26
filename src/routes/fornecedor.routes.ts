@@ -25,7 +25,7 @@ fornecedorRouter.post('/importar-teste', importarFornecedores); // Importação 
 // Rotas protegidas
 fornecedorRouter.post('/', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN]), 
+  autorizarPor([TipoUsuario.ADMIN,TipoUsuario.NUTRICIONISTA]), 
   criarFornecedor
 );
 
@@ -37,13 +37,13 @@ fornecedorRouter.post('/importar',
 
 fornecedorRouter.put('/:id_fornecedor', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.FORNECEDOR]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.FORNECEDOR,TipoUsuario.NUTRICIONISTA]), 
   atualizarFornecedor
 );
 
 fornecedorRouter.delete('/:id_fornecedor', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN]), 
+  autorizarPor([TipoUsuario.ADMIN,TipoUsuario.NUTRICIONISTA]), 
   excluirFornecedor
 );
 
