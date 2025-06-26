@@ -29,19 +29,19 @@ pedidoRouter.get('/periodo/:inicio/:fim',
 // Rotas para gerenciar pedidos
 pedidoRouter.post('/', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR,TipoUsuario.NUTRICIONISTA]), 
   PedidoController.criarPedido
 );
 
 pedidoRouter.put('/:id_pedido', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR, TipoUsuario.FORNECEDOR]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR, TipoUsuario.FORNECEDOR ,TipoUsuario.NUTRICIONISTA]), 
   PedidoController.atualizarPedido
 );
 
 pedidoRouter.delete('/:id_pedido', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR ,TipoUsuario.NUTRICIONISTA]), 
   PedidoController.excluirPedido
 );
 
