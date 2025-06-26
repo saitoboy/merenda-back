@@ -12,7 +12,7 @@ escolaRouter.get('/:id', EscolaController.buscarEscolaPorId);
 // Rotas protegidas - apenas administradores e gestores escolares podem criar, atualizar e excluir escolas
 escolaRouter.post('/', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EscolaController.criarEscola
 );
 
