@@ -97,6 +97,7 @@ export interface RespostaToken {
     nome: string;
     email: string;
     tipo: TipoUsuario;
+    id_escola?: string; // ID da escola para usuários tipo escola/gestor escolar
   };
 }
 

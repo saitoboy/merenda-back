@@ -26,24 +26,41 @@ export const login = async (email: string, senha: string) => {
     
     logger.debug(`Senha correta, gerando token JWT`, 'auth');
     
-    // Gerar token JWT
-    const token = gerarToken({
+    // Preparar payload do token
+    const tokenPayload: any = {
       id_usuario: usuario.id_usuario,
       email_usuario: usuario.email_usuario,
-      tipo: usuario.tipo_usuario // Usa o tipo de usuário do banco de dados
-    });
+      tipo: usuario.tipo_usuario
+    };
+    
+    // Incluir id_escola no token se aplicável
+    if ((usuario.tipo_usuario === TipoUsuario.ESCOLA || usuario.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && usuario.id_escola) {
+      tokenPayload.id_escola = usuario.id_escola;
+    }
+    
+    // Gerar token JWT
+    const token = gerarToken(tokenPayload);
     
     logger.success(`Login bem-sucedido: ${email} (${usuario.tipo_usuario})`, 'auth');
+    
+    // Preparar dados do usuário para resposta
+    const dadosUsuario: any = {
+      id: usuario.id_usuario,
+      nome: usuario.nome_usuario,
+      email: usuario.email_usuario,
+      tipo: usuario.tipo_usuario
+    };
+    
+    // Incluir id_escola se o usuário for do tipo escola ou gestor escolar
+    if ((usuario.tipo_usuario === TipoUsuario.ESCOLA || usuario.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && usuario.id_escola) {
+      dadosUsuario.id_escola = usuario.id_escola;
+      logger.debug(`Incluindo id_escola no token: ${usuario.id_escola}`, 'auth');
+    }
     
     // Retornar token e dados básicos do usuário
     return {
       token,
-      usuario: {
-        id: usuario.id_usuario,
-        nome: usuario.nome_usuario,
-        email: usuario.email_usuario,
-        tipo: usuario.tipo_usuario // Inclui o tipo de usuário na resposta
-      }
+      usuario: dadosUsuario
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -80,15 +97,15 @@ export const registrar = async (dados: any) => {
       logger.warning(`Tipo de usuário inválido: ${dados.tipo_usuario}`, 'auth');
       throw new Error('Tipo de usuário inválido');
     }
-      // Se for usuário tipo escola, validar id_escola
-    if (dados.tipo_usuario === TipoUsuario.ESCOLA && !dados.id_escola) {
-      logger.warning(`Usuário do tipo 'escola' sem id_escola especificado`, 'auth');
-      throw new Error('ID da escola é obrigatório para usuários do tipo escola');
+      // Se for usuário tipo escola ou gestor escolar, validar id_escola
+    if ((dados.tipo_usuario === TipoUsuario.ESCOLA || dados.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && !dados.id_escola) {
+      logger.warning(`Usuário do tipo '${dados.tipo_usuario}' sem id_escola especificado`, 'auth');
+      throw new Error('ID da escola é obrigatório para usuários do tipo escola/gestor escolar');
     }
     
     // Para outros tipos, id_escola deve ser null
-    if (dados.tipo_usuario !== TipoUsuario.ESCOLA) {
-      logger.debug(`Usuário não é do tipo escola, definindo id_escola como null`, 'auth');
+    if (dados.tipo_usuario !== TipoUsuario.ESCOLA && dados.tipo_usuario !== TipoUsuario.GESTOR_ESCOLAR) {
+      logger.debug(`Usuário não é do tipo escola/gestor escolar, definindo id_escola como null`, 'auth');
       dados.id_escola = null;
     }
     
@@ -103,12 +120,20 @@ export const registrar = async (dados: any) => {
     
     logger.success(`Usuário registrado com sucesso: ${dados.email_usuario} (${dados.tipo_usuario})`, 'auth');
     
-    return {
+    // Preparar dados de resposta
+    const dadosResposta: any = {
       id,
       nome: dados.nome_usuario,
       email: dados.email_usuario,
       tipo: dados.tipo_usuario
     };
+    
+    // Incluir id_escola se aplicável
+    if ((dados.tipo_usuario === TipoUsuario.ESCOLA || dados.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && dados.id_escola) {
+      dadosResposta.id_escola = dados.id_escola;
+    }
+    
+    return dadosResposta;
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Erro ao registrar usuário: ${error.message}`, 'auth');

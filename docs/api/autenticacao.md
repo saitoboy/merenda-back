@@ -35,6 +35,27 @@ Autentica um usuário e retorna um token JWT para acesso ao sistema.
       "id": "uuid-do-usuario",
       "nome": "Nome do Usuário",
       "email": "usuario@exemplo.com",
+      "tipo": "gestor_escolar",
+      "id_escola": "uuid-da-escola"
+    }
+  }
+}
+```
+
+**Observação**: O campo `id_escola` é incluído automaticamente quando o usuário é do tipo `escola` ou `gestor_escolar`.
+
+### Exemplo para usuário Nutricionista
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Login realizado com sucesso",
+  "dados": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "usuario": {
+      "id": "uuid-do-usuario",
+      "nome": "Ana Silva",
+      "email": "ana@nutricao.edu.br",
       "tipo": "nutricionista"
     }
   }
@@ -101,14 +122,32 @@ Campos especiais:
 
 **Código**: `201 CREATED`
 
+**Para usuários do tipo escola/gestor escolar:**
+
 ```json
 {
   "status": "sucesso",
   "mensagem": "Usuário registrado com sucesso",
   "dados": {
     "id": "uuid-do-usuario",
-    "nome": "Nome",
-    "email": "usuario@exemplo.com",
+    "nome": "Maria",
+    "email": "maria@escola.edu.br",
+    "tipo": "gestor_escolar",
+    "id_escola": "uuid-da-escola"
+  }
+}
+```
+
+**Para outros tipos de usuário:**
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Usuário registrado com sucesso",
+  "dados": {
+    "id": "uuid-do-usuario",
+    "nome": "Ana",
+    "email": "ana@nutricao.edu.br",
     "tipo": "nutricionista"
   }
 }
@@ -135,19 +174,14 @@ Campos especiais:
 ```json
 {
   "status": "erro",
-  "mensagem": "Tipo de usuário inválido"
-}
-```
-
-```json
-{
-  "status": "erro",
-  "mensagem": "ID da escola é obrigatório para usuários do tipo escola"
+  "mensagem": "ID da escola é obrigatório para usuários do tipo escola/gestor escolar"
 }
 ```
 
 ## Notas de Implementação
 
 - As senhas são criptografadas usando bcrypt antes de serem armazenadas no banco de dados
+- O campo `id_escola` é incluído automaticamente no retorno do login e registro quando o usuário é do tipo `escola` ou `gestor_escolar`
+- O token JWT também inclui o `id_escola` no payload para usuários ligados a escolas, facilitando o acesso às informações da escola sem consultas adicionais
 - O token JWT gerado no login tem validade de 12 horas
-- As informações no token incluem o ID, email e tipo do usuário
+- As informações no token incluem o ID, email, tipo do usuário e `id_escola` (quando aplicável)
