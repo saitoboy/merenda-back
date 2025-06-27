@@ -7,6 +7,7 @@ const escolaRouter = Router();
 
 // Rotas públicas
 escolaRouter.get('/', EscolaController.listarEscolas);  // Agora suporta ?segmento=valor
+escolaRouter.get('/segmentos', EscolaController.listarEscolasComSegmentos);
 escolaRouter.get('/:id', EscolaController.buscarEscolaPorId);
 
 // Rotas protegidas - apenas administradores e gestores escolares podem criar, atualizar e excluir escolas

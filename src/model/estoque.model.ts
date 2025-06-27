@@ -23,16 +23,22 @@ export const buscarPorEscola = async (id_escola: string): Promise<Estoque[]> => 
 };
 
 // Buscar detalhes completos do estoque com informações do item
-export const buscarDetalhesEstoquePorEscola = async (id_escola: string) => {
-  const estoqueDetalhado = await connection(table)
+export const buscarDetalhesEstoquePorEscola = async (id_escola: string, segmento?: string) => {
+  const query = connection(table)
     .join('item', 'estoque.id_item', '=', 'item.id_item')
-    .where('estoque.id_escola', id_escola)
-    .select(
-      'estoque.*',
-      'item.nome_item',
-      'item.unidade_medida',
-      'item.preco_item'
-    );
+    .where('estoque.id_escola', id_escola);
+  
+  // Filtrar por segmento se especificado
+  if (segmento) {
+    query.andWhere('estoque.segmento_estoque', segmento);
+  }
+  
+  const estoqueDetalhado = await query.select(
+    'estoque.*',
+    'item.nome_item',
+    'item.unidade_medida',
+    'item.preco_item'
+  );
   
   return estoqueDetalhado;
 };
@@ -203,4 +209,15 @@ export const buscarProximosValidade = async (id_escola: string, dias: number) =>
     .orderBy('estoque.validade', 'asc');
   
   return itensProximos;
+};
+
+// Buscar segmentos de estoque distintos de uma escola
+export const buscarSegmentosPorEscola = async (id_escola: string) => {
+  const segmentos = await connection(table)
+    .where('id_escola', id_escola)
+    .distinct('segmento_estoque')
+    .select('segmento_estoque')
+    .orderBy('segmento_estoque');
+  
+  return segmentos.map(s => s.segmento_estoque);
 };

@@ -235,3 +235,30 @@ export const importarEscolas = async (escolas: Omit<Escola, 'id_escola'>[]) => {
     }
   }
 };
+
+export const buscarEscolasComSegmentos = async () => {
+  try {
+    logger.info('Buscando escolas com seus segmentos', 'escola');
+    const escolas = await EscolaModel.listarTodas();
+    
+    // Mapear as escolas incluindo os segmentos
+    const escolasComSegmentos = escolas.map(escola => ({
+      id_escola: escola.id_escola,
+      nome_escola: escola.nome_escola,
+      endereco_escola: escola.endereco_escola,
+      email_escola: escola.email_escola,
+      segmentos: escola.segmento_escola || ['escola'] // Default para 'escola' se não houver segmentos
+    }));
+    
+    logger.success(`Encontradas ${escolasComSegmentos.length} escolas com segmentos`, 'escola');
+    return escolasComSegmentos;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro ao buscar escolas com segmentos: ${error.message}`, 'escola');
+      throw new Error(`Erro ao buscar escolas com segmentos: ${error.message}`);
+    } else {
+      logger.error('Erro desconhecido ao buscar escolas com segmentos', 'escola');
+      throw new Error('Erro desconhecido ao buscar escolas com segmentos');
+    }
+  }
+};

@@ -327,7 +327,51 @@ Importa múltiplas escolas a partir de um arquivo ou array JSON.
 }
 ```
 
+---
 
+## Listar Escolas com Segmentos
+
+Retorna todas as escolas com seus respectivos segmentos organizados de forma clara.
+
+**URL**: `/escolas/segmentos`
+
+**Método**: `GET`
+
+**Autenticação**: Opcional
+
+### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Escolas com segmentos listadas com sucesso",
+  "dados": [
+    {
+      "id_escola": "uuid-escola-1",
+      "nome_escola": "Escola Municipal João da Silva",
+      "endereco_escola": "Rua das Flores, 123",
+      "email_escola": "joaodasilva@edu.exemplo.com",
+      "segmentos": ["fundamental", "medio"]
+    },
+    {
+      "id_escola": "uuid-escola-2", 
+      "nome_escola": "CEFET Campus Central",
+      "endereco_escola": "Av. Tecnológica, 789",
+      "email_escola": "cefet@edu.exemplo.com",
+      "segmentos": ["medio", "proeja"]
+    },
+    {
+      "id_escola": "uuid-escola-3",
+      "nome_escola": "Creche Municipal Pequeno Príncipe", 
+      "endereco_escola": "Av. dos Sonhos, 456",
+      "email_escola": "pequenoprincipe@edu.exemplo.com",
+      "segmentos": ["infantil"]
+    }
+  ]
+}
+```
 
 ## Notas de Implementação
 

@@ -3,7 +3,7 @@ import * as EscolaModel from '../model/escola.model';
 import * as ItemModel from '../model/item.model';
 import { Estoque } from '../types';
 
-export const buscarEstoquePorEscola = async (idEscola: string) => {
+export const buscarEstoquePorEscola = async (idEscola: string, segmento?: string) => {
   try {
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
@@ -13,7 +13,7 @@ export const buscarEstoquePorEscola = async (idEscola: string) => {
     }
     
     // Buscar os itens de estoque detalhados (com join na tabela de itens)
-    const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola);
+    const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola, segmento);
     
     return estoque;
   } catch (error) {
@@ -290,6 +290,28 @@ export const buscarItensProximosValidade = async (idEscola: string, dias: number
       throw new Error(`Erro ao buscar itens próximos da validade: ${error.message}`);
     } else {
       throw new Error('Erro desconhecido ao buscar itens próximos da validade');
+    }
+  }
+};
+
+export const buscarSegmentosPorEscola = async (idEscola: string) => {
+  try {
+    // Verificar se a escola existe
+    const escola = await EscolaModel.buscarPorId(idEscola);
+    
+    if (!escola) {
+      throw new Error('Escola não encontrada');
+    }
+    
+    // Buscar os segmentos de estoque da escola
+    const segmentos = await EstoqueModel.buscarSegmentosPorEscola(idEscola);
+    
+    return segmentos;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Erro ao buscar segmentos: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao buscar segmentos');
     }
   }
 };

@@ -263,3 +263,28 @@ export const importarEscolasMassa = async (req: Request, res: Response): Promise
       });
     }  }
 };
+
+export const listarEscolasComSegmentos = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const escolas = await EscolaService.buscarEscolasComSegmentos();
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Escolas com segmentos listadas com sucesso',
+      dados: escolas
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};

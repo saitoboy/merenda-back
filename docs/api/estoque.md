@@ -680,3 +680,43 @@ Retorna todos os itens em estoque que estão próximos da data de validade dentr
   "mensagem": "Escola não encontrada"
 }
 ```
+
+---
+
+## Listar Segmentos de Estoque por Escola
+
+Retorna todos os segmentos de estoque distintos que uma escola possui.
+
+**URL**: `/estoque/escola/:id_escola/segmentos`
+
+**Método**: `GET`
+
+**Autenticação**: Opcional
+
+### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Segmentos de estoque listados com sucesso",
+  "dados": [
+    "escola",
+    "infantil",
+    "fundamental",
+    "proeja"
+  ]
+}
+```
+
+### Resposta de Erro
+
+**Código**: `404 NOT FOUND`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Escola não encontrada"
+}
+```

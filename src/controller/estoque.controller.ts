@@ -4,8 +4,9 @@ import * as EstoqueService from '../services/estoque.service';
 export const listarEstoquePorEscola = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola } = req.params;
+    const { segmento } = req.query;
     
-    const estoque = await EstoqueService.buscarEstoquePorEscola(id_escola);
+    const estoque = await EstoqueService.buscarEstoquePorEscola(id_escola, segmento as string);
     
     res.status(200).json({
       status: 'sucesso',
@@ -18,6 +19,7 @@ export const listarEstoquePorEscola = async (req: Request, res: Response): Promi
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -343,6 +345,33 @@ export const listarItensProximosValidade = async (req: Request, res: Response): 
       status: 'sucesso',
       mensagem: 'Itens próximos da validade listados com sucesso',
       dados: itensProximos
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+export const listarSegmentosPorEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id_escola } = req.params;
+    
+    const segmentos = await EstoqueService.buscarSegmentosPorEscola(id_escola);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Segmentos de estoque listados com sucesso',
+      dados: segmentos
     });
   } catch (error) {
     if (error instanceof Error) {
