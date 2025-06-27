@@ -7,12 +7,10 @@ const itemRouter = Router();
 
 // Rotas públicas
 itemRouter.get('/', ItemController.listarItens);
+itemRouter.get('/estatisticas/precos', ItemController.obterEstatisticasPrecos);
+itemRouter.get('/estatisticas/precos-por-fornecedor', ItemController.obterEstatisticasPrecosPorFornecedor);
 itemRouter.get('/:id_item', ItemController.buscarItemPorId);
 itemRouter.get('/fornecedor/:id_fornecedor', ItemController.buscarItensPorFornecedor);
-
-// Rotas de teste para desenvolvimento (remover em produção)
-itemRouter.post('/teste', ItemController.criarItem);
-itemRouter.post('/importar-teste', ItemController.importarItens);
 
 // Rotas protegidas - apenas nutricionistas e admins podem manipular itens
 itemRouter.post('/', 

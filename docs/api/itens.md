@@ -385,3 +385,71 @@ Retorna itens que estão próximos da data de validade dentro do período especi
 ```
 
 ---
+
+## Obter Estatísticas de Preços
+
+Retorna estatísticas gerais de preços de todos os itens cadastrados no sistema.
+
+**URL**: `/itens/estatisticas/precos`
+
+**Método**: `GET`
+
+**Autenticação**: Opcional
+
+### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Estatísticas de preços obtidas com sucesso",
+  "dados": {
+    "preco_medio": 15.75,
+    "total_itens": 120,
+    "preco_minimo": 2.50,
+    "preco_maximo": 45.00
+  }
+}
+```
+
+---
+
+## Obter Estatísticas de Preços por Fornecedor
+
+Retorna estatísticas de preços agrupadas por fornecedor.
+
+**URL**: `/itens/estatisticas/precos-por-fornecedor`
+
+**Método**: `GET`
+
+**Autenticação**: Opcional
+
+### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Estatísticas de preços por fornecedor obtidas com sucesso",
+  "dados": [
+    {
+      "id_fornecedor": "uuid-fornecedor-1",
+      "nome_fornecedor": "Distribuidora Alimentos Frescos",
+      "preco_medio": 12.35,
+      "total_itens": 45,
+      "preco_minimo": 3.50,
+      "preco_maximo": 25.00
+    },
+    {
+      "id_fornecedor": "uuid-fornecedor-2",
+      "nome_fornecedor": "Cooperativa Agrícola Regional",
+      "preco_medio": 18.90,
+      "total_itens": 38,
+      "preco_minimo": 5.00,
+      "preco_maximo": 45.00
+    }
+  ]
+}
+```

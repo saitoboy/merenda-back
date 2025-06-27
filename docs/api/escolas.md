@@ -334,4 +334,3 @@ Importa múltiplas escolas a partir de um arquivo ou array JSON.
 - O campo `segmento_escola` é um array de strings que pode conter múltiplos segmentos
 - Ao excluir uma escola, todos os dados relacionados (estoque, pedidos, etc.) serão mantidos para fins de histórico
 - A importação em lote é processada em uma transação atômica
-- Existe também uma rota de teste `/escolas/importar-teste` que não requer autenticação para facilitar testes durante o desenvolvimento

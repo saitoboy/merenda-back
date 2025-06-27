@@ -357,4 +357,3 @@ Importa múltiplos fornecedores a partir de um arquivo ou array JSON.
 - A senha do fornecedor é armazenada com criptografia bcrypt
 - Ao excluir um fornecedor, o sistema verifica se existem itens associados a ele
 - A importação em lote é processada em uma transação atômica
-- Existe também uma rota de teste `/fornecedores/importar-teste` que não requer autenticação para facilitar testes durante o desenvolvimento

@@ -18,10 +18,6 @@ fornecedorRouter.get('/', listarFornecedores);
 fornecedorRouter.get('/:id_fornecedor', buscarFornecedorPorId);
 fornecedorRouter.post('/login', loginFornecedor);
 
-// Rotas de teste para desenvolvimento (remover em produção)
-fornecedorRouter.post('/teste', criarFornecedor);
-fornecedorRouter.post('/importar-teste', importarFornecedores); // Importação em lote sem autenticação
-
 // Rotas protegidas
 fornecedorRouter.post('/', 
   autenticar, 

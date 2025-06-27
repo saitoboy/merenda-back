@@ -279,3 +279,37 @@ export const importarItens = async (itens: Omit<Item, 'id_item'>[]) => {
     }
   }
 };
+
+export const obterEstatisticasPrecos = async () => {
+  try {
+    logger.info('Calculando estatísticas de preços de todos os itens', 'item');
+    const estatisticas = await ItemModel.calcularPrecoMedio();
+    logger.success('Estatísticas de preços calculadas com sucesso', 'item');
+    return estatisticas;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro ao calcular estatísticas de preços: ${error.message}`, 'item');
+      throw new Error(`Erro ao calcular estatísticas de preços: ${error.message}`);
+    } else {
+      logger.error('Erro desconhecido ao calcular estatísticas de preços', 'item');
+      throw new Error('Erro desconhecido ao calcular estatísticas de preços');
+    }
+  }
+};
+
+export const obterEstatisticasPrecosPorFornecedor = async () => {
+  try {
+    logger.info('Calculando estatísticas de preços por fornecedor', 'item');
+    const estatisticas = await ItemModel.calcularPrecoMedioPorFornecedor();
+    logger.success(`Estatísticas calculadas para ${estatisticas.length} fornecedores`, 'item');
+    return estatisticas;
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro ao calcular estatísticas por fornecedor: ${error.message}`, 'item');
+      throw new Error(`Erro ao calcular estatísticas por fornecedor: ${error.message}`);
+    } else {
+      logger.error('Erro desconhecido ao calcular estatísticas por fornecedor', 'item');
+      throw new Error('Erro desconhecido ao calcular estatísticas por fornecedor');
+    }
+  }
+};

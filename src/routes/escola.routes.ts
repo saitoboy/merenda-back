@@ -23,10 +23,7 @@ escolaRouter.post('/importar',
   EscolaController.importarEscolasMassa
 );
 
-// Rota temporária para testes de importação em massa sem autenticação
-escolaRouter.post('/importar-teste', 
-  EscolaController.importarEscolasMassa
-);
+
 
 escolaRouter.put('/:id', 
   autenticar, 

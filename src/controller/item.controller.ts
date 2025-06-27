@@ -251,3 +251,61 @@ export const importarItens = async (req: Request, res: Response): Promise<void> 
     });
   }
 };
+
+export const obterEstatisticasPrecos = async (req: Request, res: Response): Promise<void> => {
+  try {
+    logger.info('Recebendo solicitação para estatísticas de preços', 'controller');
+    const estatisticas = await ItemService.obterEstatisticasPrecos();
+    
+    logger.success('Estatísticas de preços obtidas com sucesso', 'controller');
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Estatísticas de preços obtidas com sucesso',
+      dados: estatisticas
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro ao obter estatísticas de preços: ${error.message}`, 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    logger.error('Erro interno do servidor ao obter estatísticas', 'controller');
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+export const obterEstatisticasPrecosPorFornecedor = async (req: Request, res: Response): Promise<void> => {
+  try {
+    logger.info('Recebendo solicitação para estatísticas de preços por fornecedor', 'controller');
+    const estatisticas = await ItemService.obterEstatisticasPrecosPorFornecedor();
+    
+    logger.success(`Estatísticas obtidas para ${estatisticas.length} fornecedores`, 'controller');
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Estatísticas de preços por fornecedor obtidas com sucesso',
+      dados: estatisticas
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`Erro ao obter estatísticas por fornecedor: ${error.message}`, 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    logger.error('Erro interno do servidor ao obter estatísticas por fornecedor', 'controller');
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
