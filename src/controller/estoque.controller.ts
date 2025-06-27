@@ -331,3 +331,31 @@ export const definirIdeaisPorEscola = async (req: Request, res: Response): Promi
     });
   }
 };
+
+export const listarItensProximosValidade = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id_escola, dias } = req.params;
+    const diasNumero = parseInt(dias) || 7; // Default 7 dias se não especificado
+    
+    const itensProximos = await EstoqueService.buscarItensProximosValidade(id_escola, diasNumero);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Itens próximos da validade listados com sucesso',
+      dados: itensProximos
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};

@@ -45,8 +45,6 @@ export interface Item {
   nome_item: string;
   unidade_medida: string;
   sazonalidade: string;
-  validade: Date;
-  observacao?: string;
   id_fornecedor: string; // UUID
   preco_item: number;
 }
@@ -58,6 +56,8 @@ export interface Estoque {
   segmento_estoque: string; // Segmento da escola
   quantidade_item: number;
   numero_ideal: number;
+  validade?: Date; // Data de validade específica do lote
+  observacao?: string; // Observações específicas do estoque
 }
 
 // Interface do pedido

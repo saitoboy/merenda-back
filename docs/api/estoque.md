@@ -39,9 +39,10 @@ Retorna todos os itens em estoque de uma determinada escola.
       "segmento_estoque": "escola",
       "quantidade_item": 15,
       "numero_ideal": 20,
+      "validade": "2023-12-31",
+      "observacao": "Lote recente",
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
-      "validade": "2023-12-31",
       "preco_item": 7.50
     },
     {
@@ -50,9 +51,10 @@ Retorna todos os itens em estoque de uma determinada escola.
       "segmento_estoque": "infantil",
       "quantidade_item": 8,
       "numero_ideal": 10,
+      "validade": "2023-10-15",
+      "observacao": null,
       "nome_item": "Feijão Carioca",
       "unidade_medida": "Kg",
-      "validade": "2023-10-15",
       "preco_item": 9.20
     }
   ]
@@ -100,9 +102,10 @@ Retorna todos os itens cujo estoque está abaixo do número ideal definido.
       "segmento_estoque": "escola",
       "quantidade_item": 15,
       "numero_ideal": 20,
+      "validade": "2023-12-31",
+      "observacao": "Lote antigo",
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
-      "validade": "2023-12-31",
       "preco_item": 7.50
     },
     {
@@ -111,9 +114,10 @@ Retorna todos os itens cujo estoque está abaixo do número ideal definido.
       "segmento_estoque": "infantil",
       "quantidade_item": 5,
       "numero_ideal": 12,
+      "validade": "2023-11-30",
+      "observacao": null,
       "nome_item": "Leite em Pó",
       "unidade_medida": "Kg",
-      "validade": "2023-11-30",
       "preco_item": 22.90
     }
   ]
@@ -609,4 +613,70 @@ POST /estoque/ideais/uuid-escola-1
 
 ```
 DELETE /estoque/uuid-escola-1/uuid-item-1?segmento=infantil
+```
+
+---
+
+## Listar Itens Próximos da Validade
+
+Retorna todos os itens em estoque que estão próximos da data de validade dentro do período especificado em dias.
+
+**URL**: `/estoque/escola/:id_escola/proximos-validade/:dias`
+
+**Método**: `GET`
+
+**Autenticação**: Opcional
+
+**Parâmetros**:
+- `id_escola` - ID da escola
+- `dias` - Número de dias para considerar como "próximo da validade" (ex: 7 para 7 dias)
+
+### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Itens próximos da validade listados com sucesso",
+  "dados": [
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-2",
+      "segmento_estoque": "escola",
+      "quantidade_item": 8,
+      "numero_ideal": 10,
+      "validade": "2023-10-15",
+      "observacao": "Lote especial",
+      "nome_item": "Feijão Carioca",
+      "unidade_medida": "Kg",
+      "preco_item": 9.20,
+      "dias_restantes": 5
+    },
+    {
+      "id_escola": "uuid-escola-1",
+      "id_item": "uuid-item-5",
+      "segmento_estoque": "infantil",
+      "quantidade_item": 3,
+      "numero_ideal": 8,
+      "validade": "2023-10-20",
+      "observacao": null,
+      "nome_item": "Leite em Pó",
+      "unidade_medida": "Kg",
+      "preco_item": 22.50,
+      "dias_restantes": 10
+    }
+  ]
+}
+```
+
+### Respostas de Erro
+
+**Código**: `404 NOT FOUND`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Escola não encontrada"
+}
 ```

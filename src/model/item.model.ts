@@ -62,19 +62,6 @@ export const excluir = async (id_item: string): Promise<void> => {
     .delete();
 };
 
-// Buscar itens próximos da validade (em dias)
-export const buscarProximosValidade = async (dias: number): Promise<Item[]> => {
-  const dataLimite = new Date();
-  dataLimite.setDate(dataLimite.getDate() + dias);
-  
-  const itens = await connection(table)
-    .where('validade', '<=', dataLimite)
-    .andWhere('validade', '>=', new Date())
-    .select('*');
-  
-  return itens;
-};
-
 // Calcular preço médio de todos os itens
 export const calcularPrecoMedio = async () => {
   const resultado = await connection(table)

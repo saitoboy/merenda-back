@@ -26,8 +26,6 @@ Retorna todos os itens cadastrados no sistema.
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
       "sazonalidade": "Ano todo",
-      "validade": "2023-12-31",
-      "observacao": "Orgânico",
       "id_fornecedor": "uuid-fornecedor-1",
       "preco_item": 7.50
     },
@@ -36,8 +34,6 @@ Retorna todos os itens cadastrados no sistema.
       "nome_item": "Feijão Carioca",
       "unidade_medida": "Kg",
       "sazonalidade": "Ano todo",
-      "validade": "2023-10-15",
-      "observacao": null,
       "id_fornecedor": "uuid-fornecedor-2",
       "preco_item": 9.20
     }
@@ -70,8 +66,6 @@ Retorna os detalhes de um item específico pelo seu ID.
     "nome_item": "Arroz Integral",
     "unidade_medida": "Kg",
     "sazonalidade": "Ano todo",
-    "validade": "2023-12-31",
-    "observacao": "Orgânico",
     "id_fornecedor": "uuid-fornecedor-1",
     "preco_item": 7.50
   }
@@ -115,8 +109,6 @@ Retorna todos os itens associados a um fornecedor específico.
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
       "sazonalidade": "Ano todo",
-      "validade": "2023-12-31",
-      "observacao": "Orgânico",
       "id_fornecedor": "uuid-fornecedor-1",
       "preco_item": 7.50
     },
@@ -125,8 +117,6 @@ Retorna todos os itens associados a um fornecedor específico.
       "nome_item": "Macarrão Integral",
       "unidade_medida": "Kg",
       "sazonalidade": "Ano todo",
-      "validade": "2023-11-20",
-      "observacao": null,
       "id_fornecedor": "uuid-fornecedor-1",
       "preco_item": 5.30
     }
@@ -164,8 +154,6 @@ Cria um novo item no sistema.
   "nome_item": "Azeite de Oliva Extra Virgem",
   "unidade_medida": "L",
   "sazonalidade": "Ano todo",
-  "validade": "2024-06-30",
-  "observacao": "Importado",
   "id_fornecedor": "uuid-fornecedor-3",
   "preco_item": 28.90
 }
@@ -222,8 +210,7 @@ Atualiza os dados de um item existente.
 ```json
 {
   "nome_item": "Azeite de Oliva Extra Virgem Orgânico",
-  "preco_item": 32.50,
-  "observacao": "Importado da Espanha"
+  "preco_item": 32.50
 }
 ```
 
@@ -334,53 +321,6 @@ Importa múltiplos itens de uma vez através de um arquivo CSV ou JSON.
 {
   "status": "erro",
   "mensagem": "Formato de arquivo inválido ou dados inconsistentes"
-}
-```
-
----
-
-## Itens Próximos da Validade
-
-Retorna itens que estão próximos da data de validade dentro do período especificado em dias.
-
-**URL**: `/itens/validade/:dias`
-
-**Método**: `GET`
-
-**Autenticação**: Sim
-
-### Resposta de Sucesso
-
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Itens próximos da validade listados com sucesso",
-  "dados": [
-    {
-      "id_item": "uuid-item-2",
-      "nome_item": "Feijão Carioca",
-      "unidade_medida": "Kg",
-      "sazonalidade": "Ano todo",
-      "validade": "2023-10-15",
-      "observacao": null,
-      "id_fornecedor": "uuid-fornecedor-2",
-      "preco_item": 9.20,
-      "dias_restantes": 12
-    },
-    {
-      "id_item": "uuid-item-5",
-      "nome_item": "Leite em Pó",
-      "unidade_medida": "Kg",
-      "sazonalidade": "Ano todo",
-      "validade": "2023-10-20",
-      "observacao": "Integral",
-      "id_fornecedor": "uuid-fornecedor-1",
-      "preco_item": 22.50,
-      "dias_restantes": 17
-    }
-  ]
 }
 ```
 

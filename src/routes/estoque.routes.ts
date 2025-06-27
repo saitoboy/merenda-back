@@ -8,6 +8,7 @@ const estoqueRouter = Router();
 // Rotas para listar estoque
 estoqueRouter.get('/escola/:id_escola', EstoqueController.listarEstoquePorEscola);
 estoqueRouter.get('/escola/:id_escola/abaixo-ideal', EstoqueController.listarItensAbaixoIdeal);
+estoqueRouter.get('/escola/:id_escola/proximos-validade/:dias', EstoqueController.listarItensProximosValidade);
 estoqueRouter.get('/escola/:id_escola/metricas', EstoqueController.obterMetricas);
 
 // Novas rotas para gestão de valores ideais

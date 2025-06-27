@@ -271,3 +271,25 @@ export const definirIdeaisPorEscola = async (id_escola: string, itens_ideais: Ar
     }
   }
 };
+
+export const buscarItensProximosValidade = async (idEscola: string, dias: number = 7) => {
+  try {
+    // Verificar se a escola existe
+    const escola = await EscolaModel.buscarPorId(idEscola);
+    
+    if (!escola) {
+      throw new Error('Escola não encontrada');
+    }
+    
+    // Buscar os itens próximos da validade
+    const itensProximos = await EstoqueModel.buscarProximosValidade(idEscola, dias);
+    
+    return itensProximos;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Erro ao buscar itens próximos da validade: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao buscar itens próximos da validade');
+    }
+  }
+};

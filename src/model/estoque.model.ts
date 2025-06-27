@@ -31,7 +31,6 @@ export const buscarDetalhesEstoquePorEscola = async (id_escola: string) => {
       'estoque.*',
       'item.nome_item',
       'item.unidade_medida',
-      'item.validade',
       'item.preco_item'
     );
   
@@ -48,7 +47,6 @@ export const buscarItensAbaixoIdeal = async (id_escola: string) => {
       'estoque.*',
       'item.nome_item',
       'item.unidade_medida',
-      'item.validade',
       'item.preco_item'
     );
   
@@ -100,16 +98,17 @@ export const obterMetricasEstoque = async (id_escola: string) => {
     .whereRaw('quantidade_item < numero_ideal')
     .count('* as total')
     .first();
-    // Join para buscar itens próximos da validade
+    
+  // Buscar itens próximos da validade (agora no estoque)
   const dataAtual = new Date();
   const dataLimite = new Date();
   dataLimite.setDate(dataLimite.getDate() + 7);
   
   const proximosValidade = await connection(table)
-    .join('item', 'estoque.id_item', '=', 'item.id_item')
-    .where('estoque.id_escola', id_escola)
-    .andWhere('item.validade', '<=', dataLimite)
-    .andWhere('item.validade', '>=', dataAtual)
+    .where('id_escola', id_escola)
+    .andWhere('validade', '<=', dataLimite)
+    .andWhere('validade', '>=', dataAtual)
+    .whereNotNull('validade')
     .count('* as total')
     .first();
   
@@ -180,4 +179,28 @@ export const definirIdeaisEmLote = async (ideais: Array<{id_escola: string, id_i
 
     return resultados;
   });
+};
+
+// Buscar itens próximos da validade no estoque (em dias)
+export const buscarProximosValidade = async (id_escola: string, dias: number) => {
+  const dataAtual = new Date();
+  const dataLimite = new Date();
+  dataLimite.setDate(dataLimite.getDate() + dias);
+  
+  const itensProximos = await connection(table)
+    .join('item', 'estoque.id_item', '=', 'item.id_item')
+    .where('estoque.id_escola', id_escola)
+    .andWhere('estoque.validade', '<=', dataLimite)
+    .andWhere('estoque.validade', '>=', dataAtual)
+    .whereNotNull('estoque.validade')
+    .select(
+      'estoque.*',
+      'item.nome_item',
+      'item.unidade_medida',
+      'item.preco_item',
+      connection.raw('(estoque.validade - CURRENT_DATE) as dias_restantes')
+    )
+    .orderBy('estoque.validade', 'asc');
+  
+  return itensProximos;
 };
