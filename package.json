@@ -4,7 +4,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsnd src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "node scripts/run-migrations.js",
+    "migrate:bash": "./run-migrations.sh",
+    "migrate:powershell": ".\\run-migrations.ps1"
   },
   "keywords": [],
   "author": "",
