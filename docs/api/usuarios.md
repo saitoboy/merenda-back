@@ -27,7 +27,7 @@ Retorna todos os usuários cadastrados no sistema.
       "sobrenome_usuario": "Silva",
       "id_escola": "uuid-escola-1",
       "email_usuario": "maria.silva@escola.edu.br",
-      "tipo_usuario": "gestor_escolar"
+      "tipo_usuario": "escola"
     },
     {
       "id_usuario": "uuid-usuario-2",
@@ -69,7 +69,7 @@ Retorna os detalhes de um usuário específico pelo seu ID.
     "sobrenome_usuario": "Silva",
     "id_escola": "uuid-escola-1",
     "email_usuario": "maria.silva@escola.edu.br",
-    "tipo_usuario": "gestor_escolar"
+    "tipo_usuario": "escola"
   }
 }
 ```
@@ -121,7 +121,7 @@ Retorna todos os usuários associados a uma escola específica.
       "sobrenome_usuario": "Silva",
       "id_escola": "uuid-escola-1",
       "email_usuario": "maria.silva@escola.edu.br",
-      "tipo_usuario": "gestor_escolar"
+      "tipo_usuario": "escola"
     },
     {
       "id_usuario": "uuid-usuario-3",
@@ -176,7 +176,7 @@ Cria um novo usuário no sistema.
   "id_escola": "uuid-escola-2",
   "email_usuario": "pedro.mendes@escola.edu.br",
   "senha_usuario": "senha_segura_123",
-  "tipo_usuario": "gestor_escolar"
+  "tipo_usuario": "escola"
 }
 ```
 
@@ -410,7 +410,7 @@ Retorna as informações do usuário autenticado.
     "sobrenome_usuario": "Silva",
     "id_escola": "uuid-escola-1",
     "email_usuario": "maria.silva@escola.edu.br",
-    "tipo_usuario": "gestor_escolar",
+    "tipo_usuario": "escola",
     "escola": {
       "id_escola": "uuid-escola-1",
       "nome_escola": "E.M. Maria da Silva"

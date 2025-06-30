@@ -34,7 +34,7 @@ export const login = async (email: string, senha: string) => {
     };
     
     // Incluir id_escola no token se aplicável
-    if ((usuario.tipo_usuario === TipoUsuario.ESCOLA || usuario.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && usuario.id_escola) {
+    if (usuario.tipo_usuario === TipoUsuario.ESCOLA && usuario.id_escola) {
       tokenPayload.id_escola = usuario.id_escola;
     }
     
@@ -51,8 +51,8 @@ export const login = async (email: string, senha: string) => {
       tipo: usuario.tipo_usuario
     };
     
-    // Incluir id_escola se o usuário for do tipo escola ou gestor escolar
-    if ((usuario.tipo_usuario === TipoUsuario.ESCOLA || usuario.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && usuario.id_escola) {
+    // Incluir id_escola se o usuário for do tipo escola
+    if (usuario.tipo_usuario === TipoUsuario.ESCOLA && usuario.id_escola) {
       dadosUsuario.id_escola = usuario.id_escola;
       logger.debug(`Incluindo id_escola no token: ${usuario.id_escola}`, 'auth');
     }
@@ -97,15 +97,15 @@ export const registrar = async (dados: any) => {
       logger.warning(`Tipo de usuário inválido: ${dados.tipo_usuario}`, 'auth');
       throw new Error('Tipo de usuário inválido');
     }
-      // Se for usuário tipo escola ou gestor escolar, validar id_escola
-    if ((dados.tipo_usuario === TipoUsuario.ESCOLA || dados.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && !dados.id_escola) {
+      // Se for usuário tipo escola, validar id_escola
+    if (dados.tipo_usuario === TipoUsuario.ESCOLA && !dados.id_escola) {
       logger.warning(`Usuário do tipo '${dados.tipo_usuario}' sem id_escola especificado`, 'auth');
-      throw new Error('ID da escola é obrigatório para usuários do tipo escola/gestor escolar');
+      throw new Error('ID da escola é obrigatório para usuários do tipo escola');
     }
     
     // Para outros tipos, id_escola deve ser null
-    if (dados.tipo_usuario !== TipoUsuario.ESCOLA && dados.tipo_usuario !== TipoUsuario.GESTOR_ESCOLAR) {
-      logger.debug(`Usuário não é do tipo escola/gestor escolar, definindo id_escola como null`, 'auth');
+    if (dados.tipo_usuario !== TipoUsuario.ESCOLA) {
+      logger.debug(`Usuário não é do tipo escola, definindo id_escola como null`, 'auth');
       dados.id_escola = null;
     }
     
@@ -129,7 +129,7 @@ export const registrar = async (dados: any) => {
     };
     
     // Incluir id_escola se aplicável
-    if ((dados.tipo_usuario === TipoUsuario.ESCOLA || dados.tipo_usuario === TipoUsuario.GESTOR_ESCOLAR) && dados.id_escola) {
+    if (dados.tipo_usuario === TipoUsuario.ESCOLA && dados.id_escola) {
       dadosResposta.id_escola = dados.id_escola;
     }
     

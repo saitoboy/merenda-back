@@ -42,7 +42,7 @@ Esta seção contém informações sobre erros comuns, suas causas e possíveis 
 **Solução**:
 - Verifique se o email está correto
 - Verifique se a senha está correta
-- Certifique-se de que o tipo de usuário está correto (admin, nutricionista, gestor_escolar, etc.)
+- Certifique-se de que o tipo de usuário está correto (admin, nutricionista, escola, etc.)
 
 ## Erros de Permissão
 

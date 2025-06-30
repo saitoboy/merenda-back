@@ -35,14 +35,14 @@ Autentica um usuário e retorna um token JWT para acesso ao sistema.
       "id": "uuid-do-usuario",
       "nome": "Nome do Usuário",
       "email": "usuario@exemplo.com",
-      "tipo": "gestor_escolar",
+      "tipo": "escola",
       "id_escola": "uuid-da-escola"
     }
   }
 }
 ```
 
-**Observação**: O campo `id_escola` é incluído automaticamente quando o usuário é do tipo `escola` ou `gestor_escolar`.
+**Observação**: O campo `id_escola` é incluído automaticamente quando o usuário é do tipo `escola`.
 
 ### Exemplo para usuário Nutricionista
 
@@ -115,14 +115,14 @@ Registra um novo usuário no sistema.
 ```
 
 Campos especiais:
-- `tipo_usuario`: Pode ser "admin", "nutricionista", "escola", "gestor_escolar" ou "fornecedor"
-- `id_escola`: Obrigatório apenas quando `tipo_usuario` é "escola" ou "gestor_escolar"
+- `tipo_usuario`: Pode ser "admin", "nutricionista", "escola" ou "fornecedor"
+- `id_escola`: Obrigatório apenas quando `tipo_usuario` é "escola"
 
 ### Resposta de Sucesso
 
 **Código**: `201 CREATED`
 
-**Para usuários do tipo escola/gestor escolar:**
+**Para usuários do tipo escola:**
 
 ```json
 {
@@ -132,7 +132,7 @@ Campos especiais:
     "id": "uuid-do-usuario",
     "nome": "Maria",
     "email": "maria@escola.edu.br",
-    "tipo": "gestor_escolar",
+    "tipo": "escola",
     "id_escola": "uuid-da-escola"
   }
 }
@@ -181,7 +181,7 @@ Campos especiais:
 ## Notas de Implementação
 
 - As senhas são criptografadas usando bcrypt antes de serem armazenadas no banco de dados
-- O campo `id_escola` é incluído automaticamente no retorno do login e registro quando o usuário é do tipo `escola` ou `gestor_escolar`
+- O campo `id_escola` é incluído automaticamente no retorno do login e registro quando o usuário é do tipo `escola`
 - O token JWT também inclui o `id_escola` no payload para usuários ligados a escolas, facilitando o acesso às informações da escola sem consultas adicionais
 - O token JWT gerado no login tem validade de 12 horas
 - As informações no token incluem o ID, email, tipo do usuário e `id_escola` (quando aplicável)

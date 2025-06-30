@@ -28,7 +28,7 @@ escolaRouter.post('/importar',
 
 escolaRouter.put('/:id', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.GESTOR_ESCOLAR, TipoUsuario.NUTRICIONISTA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA, TipoUsuario.NUTRICIONISTA]), 
   EscolaController.atualizarEscola
 );
 
