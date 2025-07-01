@@ -12,7 +12,7 @@ const periodoLancamentoRouter = Router();
 // Rotas públicas - consulta de períodos
 periodoLancamentoRouter.get('/', PeriodoLancamentoController.listarPeriodos); // ?ativos=true
 periodoLancamentoRouter.get('/atual', PeriodoLancamentoController.buscarPeriodoAtual);
-periodoLancamentoRouter.get('/buscar', PeriodoLancamentoController.buscarPeriodoPorNome); // ?nome=valor
+periodoLancamentoRouter.get('/buscar', PeriodoLancamentoController.buscarPeriodoPorMesAno); // ?mes=1&ano=2024
 periodoLancamentoRouter.get('/intervalo', PeriodoLancamentoController.buscarPeriodosPorIntervalo); // ?data_inicio=YYYY-MM-DD&data_fim=YYYY-MM-DD
 periodoLancamentoRouter.get('/:id', PeriodoLancamentoController.buscarPeriodoPorId);
 
@@ -51,17 +51,6 @@ periodoLancamentoRouter.post('/:id/desativar',
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   PeriodoLancamentoController.desativarPeriodo
-);
-
-// =====================================
-// ESTATÍSTICAS E RELATÓRIOS
-// =====================================
-
-// Obter estatísticas de um período
-periodoLancamentoRouter.get('/:id/estatisticas', 
-  autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA, TipoUsuario.ESCOLA]), 
-  PeriodoLancamentoController.obterEstatisticasPeriodo
 );
 
 export default periodoLancamentoRouter;

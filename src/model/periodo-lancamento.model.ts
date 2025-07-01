@@ -1,5 +1,5 @@
 import connection from '../connection';
-import { PeriodoLancamento } from '../types';
+import { PeriodoLancamento, CriarPeriodoLancamento, AtualizarPeriodoLancamento } from '../types';
 
 const table = 'periodo_lancamento';
 
@@ -12,10 +12,10 @@ export const buscarPorId = async (id_periodo: string): Promise<PeriodoLancamento
   return periodo;
 };
 
-// Buscar período por nome
-export const buscarPorNome = async (nome_periodo: string): Promise<PeriodoLancamento | undefined> => {
+// Buscar período por mês e ano
+export const buscarPorMesAno = async (mes: number, ano: number): Promise<PeriodoLancamento | undefined> => {
   const periodo = await connection(table)
-    .where({ nome_periodo })
+    .where({ mes, ano })
     .first();
   
   return periodo;
@@ -54,19 +54,25 @@ export const listarAtivos = async (): Promise<PeriodoLancamento[]> => {
 };
 
 // Criar novo período
-export const criar = async (periodo: Omit<PeriodoLancamento, 'id_periodo'>): Promise<string> => {
+export const criar = async (periodo: CriarPeriodoLancamento): Promise<string> => {
   const [result] = await connection(table)
-    .insert(periodo)
+    .insert({
+      ...periodo,
+      updated_at: new Date()
+    })
     .returning('id_periodo');
   
   return result.id_periodo;
 };
 
 // Atualizar período
-export const atualizar = async (id_periodo: string, dados: Partial<Omit<PeriodoLancamento, 'id_periodo'>>): Promise<void> => {
+export const atualizar = async (id_periodo: string, dados: AtualizarPeriodoLancamento): Promise<void> => {
   await connection(table)
     .where({ id_periodo })
-    .update(dados);
+    .update({
+      ...dados,
+      updated_at: new Date()
+    });
 };
 
 // Excluir período

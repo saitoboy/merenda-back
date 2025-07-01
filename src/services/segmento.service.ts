@@ -250,7 +250,6 @@ export const obterEstatisticasSegmento = async (id: string) => {
     const estatisticas = {
       id_segmento: segmento.id_segmento,
       nome_segmento: segmento.nome_segmento,
-      descricao_segmento: segmento.descricao_segmento,
       total_escolas: escolas.length,
       escolas_associadas: escolas.map(e => ({
         id_escola: e.id_escola,
@@ -318,8 +317,7 @@ export const importarSegmentos = async (segmentos: Omit<Segmento, 'id_segmento'>
         resultados.push({
           indice: index,
           id,
-          nome: segmentoData.nome_segmento,
-          descricao: segmentoData.descricao_segmento
+          nome: segmentoData.nome_segmento
         });
       } catch (e) {
         const erro = e instanceof Error ? e.message : 'Erro desconhecido';

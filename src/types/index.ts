@@ -40,23 +40,31 @@ export interface Fornecedor {
 // Interface do segmento
 export interface Segmento {
   id_segmento: string; // UUID
-  nome_segmento: string; // Ex: 'creche', 'pre-escola', 'fundamental-1', etc.
-  descricao_segmento?: string; // Descrição opcional do segmento
+  nome_segmento: string; // Ex: 'creche', 'escola', 'brasil alfabetizado', 'proeja'
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 // Interface do período de lançamento
 export interface PeriodoLancamento {
   id_periodo: string; // UUID
-  nome_periodo: string; // Ex: '2024-Q1', 'Janeiro-2024', etc.
+  mes: number; // Mês (1-12)
+  ano: number; // Ano (ex: 2025)
+  data_referencia: Date; // Data de referência do período
   data_inicio: Date; // Data de início do período
   data_fim: Date; // Data de fim do período
   ativo: boolean; // Se o período está ativo para lançamentos
+  criado_por: string; // UUID do usuário que criou
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 // Interface do relacionamento escola-segmento
 export interface EscolaSegmento {
   id_escola: string; // UUID - FK para escola
   id_segmento: string; // UUID - FK para segmento
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 // Interface do item
@@ -146,6 +154,33 @@ export interface FiltrosEscola {
   nome_segmento?: string;
 }
 
+// DTOs para período de lançamento
+export interface CriarPeriodoLancamento {
+  mes: number;
+  ano: number;
+  data_referencia: Date;
+  data_inicio: Date;
+  data_fim: Date;
+  ativo?: boolean;
+  criado_por: string;
+}
+
+export interface AtualizarPeriodoLancamento {
+  mes?: number;
+  ano?: number;
+  data_referencia?: Date;
+  data_inicio?: Date;
+  data_fim?: Date;
+  ativo?: boolean;
+}
+
+// Interface para período com dados relacionados
+export interface PeriodoLancamentoCompleto extends PeriodoLancamento {
+  nome_criador?: string;
+  total_escolas?: number;
+  total_itens_estoque?: number;
+}
+
 // Enum para status de resposta da API
 export enum StatusResposta {
   SUCESSO = 'sucesso',
@@ -185,7 +220,13 @@ export interface ResumoDashboardEscola {
   itens_proximos_validade: number;
   pedidos_pendentes: number;
   segmentos_ativos: number; // Quantidade de segmentos ativos na escola
-  periodo_ativo?: string; // Nome do período ativo atual
+  periodo_ativo?: {
+    id_periodo: string;
+    mes: number;
+    ano: number;
+    data_inicio: Date;
+    data_fim: Date;
+  }; // Dados do período ativo atual
 }
 
 // Interface para resumo de pedidos

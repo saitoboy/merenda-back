@@ -29,21 +29,27 @@ Retorna todos os períodos cadastrados no sistema.
   "dados": [
     {
       "id_periodo": "uuid-periodo-1",
-      "nome_periodo": "1º Semestre 2023",
-      "data_inicio": "2023-01-01",
-      "data_fim": "2023-06-30",
+      "mes": 1,
+      "ano": 2024,
+      "data_inicio": "2024-01-01",
+      "data_fim": "2024-01-31",
+      "data_referencia": "2024-01-15",
       "ativo": true,
-      "created_at": "2023-01-01T00:00:00Z",
-      "updated_at": "2023-01-01T00:00:00Z"
+      "criado_por": "uuid-usuario-1",
+      "created_at": "2023-12-01T00:00:00Z",
+      "updated_at": "2023-12-01T00:00:00Z"
     },
     {
       "id_periodo": "uuid-periodo-2",
-      "nome_periodo": "2º Semestre 2023",
-      "data_inicio": "2023-07-01",
-      "data_fim": "2023-12-31",
+      "mes": 2,
+      "ano": 2024,
+      "data_inicio": "2024-02-01",
+      "data_fim": "2024-02-29",
+      "data_referencia": "2024-02-15",
       "ativo": false,
-      "created_at": "2023-07-01T00:00:00Z",
-      "updated_at": "2023-07-01T00:00:00Z"
+      "criado_por": "uuid-usuario-1",
+      "created_at": "2024-01-15T00:00:00Z",
+      "updated_at": "2024-01-15T00:00:00Z"
     }
   ]
 }
@@ -71,12 +77,15 @@ Retorna o período atualmente ativo.
   "mensagem": "Período atual encontrado com sucesso",
   "dados": {
     "id_periodo": "uuid-periodo-1",
-    "nome_periodo": "1º Semestre 2023",
-    "data_inicio": "2023-01-01",
-    "data_fim": "2023-06-30",
+    "mes": 1,
+    "ano": 2024,
+    "data_inicio": "2024-01-01",
+    "data_fim": "2024-01-31",
+    "data_referencia": "2024-01-15",
     "ativo": true,
-    "created_at": "2023-01-01T00:00:00Z",
-    "updated_at": "2023-01-01T00:00:00Z"
+    "criado_por": "uuid-usuario-1",
+    "created_at": "2023-12-01T00:00:00Z",
+    "updated_at": "2023-12-01T00:00:00Z"
   }
 }
 ```
@@ -94,9 +103,9 @@ Retorna o período atualmente ativo.
 
 ---
 
-### Buscar Período por Nome
+### Buscar Período por Mês/Ano
 
-Busca períodos por nome (busca parcial).
+Busca período específico por mês e ano.
 
 **URL**: `/periodos/buscar`
 
@@ -106,12 +115,13 @@ Busca períodos por nome (busca parcial).
 
 #### Parâmetros da Query
 
-- `nome` (obrigatório): Nome ou parte do nome do período
+- `mes` (obrigatório): Mês do período (1-12)
+- `ano` (obrigatório): Ano do período
 
 #### Exemplo de Uso
 
 ```
-GET /periodos/buscar?nome=semestre
+GET /periodos/buscar?mes=1&ano=2024
 ```
 
 #### Resposta de Sucesso
@@ -121,18 +131,19 @@ GET /periodos/buscar?nome=semestre
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Períodos encontrados com sucesso",
-  "dados": [
-    {
-      "id_periodo": "uuid-periodo-1",
-      "nome_periodo": "1º Semestre 2023",
-      "data_inicio": "2023-01-01",
-      "data_fim": "2023-06-30",
-      "ativo": true,
-      "created_at": "2023-01-01T00:00:00Z",
-      "updated_at": "2023-01-01T00:00:00Z"
-    }
-  ]
+  "mensagem": "Período encontrado com sucesso",
+  "dados": {
+    "id_periodo": "uuid-periodo-1",
+    "mes": 1,
+    "ano": 2024,
+    "data_inicio": "2024-01-01",
+    "data_fim": "2024-01-31",
+    "data_referencia": "2024-01-15",
+    "ativo": true,
+    "criado_por": "uuid-usuario-1",
+    "created_at": "2023-12-01T00:00:00Z",
+    "updated_at": "2023-12-01T00:00:00Z"
+  }
 }
 ```
 

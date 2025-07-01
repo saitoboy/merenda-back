@@ -63,19 +63,30 @@ export const buscarPeriodoPorId = async (req: Request, res: Response): Promise<v
   }
 };
 
-export const buscarPeriodoPorNome = async (req: Request, res: Response): Promise<void> => {
+export const buscarPeriodoPorMesAno = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nome } = req.query;
+    const { mes, ano } = req.query;
     
-    if (!nome || typeof nome !== 'string') {
+    if (!mes || !ano) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Nome do período é obrigatório'
+        mensagem: 'Mês e ano são obrigatórios'
       });
       return;
     }
     
-    const periodo = await PeriodoLancamentoService.buscarPeriodoPorNome(nome);
+    const mesNumero = parseInt(mes as string);
+    const anoNumero = parseInt(ano as string);
+    
+    if (isNaN(mesNumero) || isNaN(anoNumero)) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Mês e ano devem ser números válidos'
+      });
+      return;
+    }
+    
+    const periodo = await PeriodoLancamentoService.buscarPeriodoPorMesAno(mesNumero, anoNumero);
     
     res.status(200).json({
       status: 'sucesso',
@@ -126,10 +137,10 @@ export const criarPeriodo = async (req: Request, res: Response): Promise<void> =
     const dadosPeriodo = req.body;
     
     // Validações básicas
-    if (!dadosPeriodo.nome_periodo || !dadosPeriodo.data_inicio || !dadosPeriodo.data_fim) {
+    if (!dadosPeriodo.mes || !dadosPeriodo.ano || !dadosPeriodo.data_inicio || !dadosPeriodo.data_fim) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Nome, data de início e data de fim são obrigatórios'
+        mensagem: 'Mês, ano, data de início e data de fim são obrigatórios'
       });
       return;
     }
@@ -147,7 +158,7 @@ export const criarPeriodo = async (req: Request, res: Response): Promise<void> =
     res.status(201).json({
       status: 'sucesso',
       mensagem: resultado.mensagem,
-      dados: { id: resultado.id }
+      dados: { id_periodo: resultado.id_periodo }
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -278,7 +289,7 @@ export const desativarPeriodo = async (req: Request, res: Response): Promise<voi
 };
 
 // =====================================
-// CONSULTAS ESPECIAIS E ESTATÍSTICAS
+// CONSULTAS ESPECIAIS
 // =====================================
 
 export const buscarPeriodosPorIntervalo = async (req: Request, res: Response): Promise<void> => {
@@ -303,32 +314,6 @@ export const buscarPeriodosPorIntervalo = async (req: Request, res: Response): P
       mensagem: 'Períodos encontrados com sucesso',
       dados: periodos,
       total: periodos.length
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(400).json({
-        status: 'erro',
-        mensagem: error.message
-      });
-    } else {
-      res.status(500).json({
-        status: 'erro',
-        mensagem: 'Erro interno do servidor'
-      });
-    }
-  }
-};
-
-export const obterEstatisticasPeriodo = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    
-    const estatisticas = await PeriodoLancamentoService.obterEstatisticasPeriodo(id);
-    
-    res.status(200).json({
-      status: 'sucesso',
-      mensagem: 'Estatísticas do período obtidas com sucesso',
-      dados: estatisticas
     });
   } catch (error) {
     if (error instanceof Error) {

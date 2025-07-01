@@ -26,14 +26,12 @@ Retorna todos os segmentos cadastrados no sistema.
     {
       "id_segmento": "uuid-segmento-1",
       "nome_segmento": "Ensino Fundamental",
-      "descricao_segmento": "1º ao 9º ano do ensino fundamental",
       "created_at": "2023-01-15T10:30:00Z",
       "updated_at": "2023-06-20T14:15:00Z"
     },
     {
       "id_segmento": "uuid-segmento-2",
       "nome_segmento": "Educação Infantil",
-      "descricao_segmento": "Creche e pré-escola (0 a 5 anos)",
       "created_at": "2023-01-15T10:30:00Z",
       "updated_at": "2023-06-20T14:15:00Z"
     }
@@ -75,7 +73,6 @@ GET /segmentos/buscar?nome=fundamental
     {
       "id_segmento": "uuid-segmento-1",
       "nome_segmento": "Ensino Fundamental",
-      "descricao_segmento": "1º ao 9º ano do ensino fundamental",
       "created_at": "2023-01-15T10:30:00Z",
       "updated_at": "2023-06-20T14:15:00Z"
     }
@@ -106,7 +103,6 @@ Retorna os dados detalhados de um segmento específico.
   "dados": {
     "id_segmento": "uuid-segmento-1",
     "nome_segmento": "Ensino Fundamental",
-    "descricao_segmento": "1º ao 9º ano do ensino fundamental",
     "created_at": "2023-01-15T10:30:00Z",
     "updated_at": "2023-06-20T14:15:00Z"
   }
