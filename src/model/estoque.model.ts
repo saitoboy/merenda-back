@@ -3,6 +3,12 @@ import { Estoque, CriarEstoque, AtualizarEstoque, EstoqueCompleto, FiltroEstoque
 
 const table = 'estoque';
 
+// Tipo para resultado da operação de definir ideais
+type ResultadoIdeal = {
+  id_estoque: string;
+  acao: 'atualizado' | 'criado';
+} & Pick<CriarEstoque, 'id_escola' | 'id_item' | 'id_segmento' | 'id_periodo' | 'numero_ideal'>;
+
 // Buscar item de estoque por ID
 export const buscarPorId = async (id_estoque: string): Promise<Estoque | undefined> => {
   const estoqueItem = await connection(table)
@@ -297,7 +303,7 @@ export const definirIdeaisEmLote = async (ideais: Array<{
 }>) => {
   // Usar transaction para garantir que todas as operações tenham sucesso
   return await connection.transaction(async (trx) => {
-    const resultados = [];
+    const resultados: ResultadoIdeal[] = [];
 
     // Para cada item na lista de ideais
     for (const ideal of ideais) {

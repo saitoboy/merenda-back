@@ -284,8 +284,15 @@ export const importarSegmentos = async (segmentos: Omit<Segmento, 'id_segmento'>
       throw new Error('Nenhum segmento para importar');
     }
     
-    const resultados = [];
-    const erros = [];
+    const resultados: Array<{
+      indice: number;
+      id: string;
+      nome: string;
+    }> = [];
+    const erros: Array<{
+      indice: number;
+      erro: string;
+    }> = [];
     
     logger.debug(`Processando ${segmentos.length} segmentos para importação`, 'segmento');
     
