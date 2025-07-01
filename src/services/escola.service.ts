@@ -2,6 +2,8 @@ import * as EscolaModel from '../model/escola.model';
 import * as EscolaSegmentoModel from '../model/escola-segmento.model';
 import { Escola, EscolaSegmento, FiltrosEscola, EscolaComSegmentos } from '../types';
 import { gerarUUID, logger } from '../utils';
+import { NotFoundError, ConstraintViolationError } from '../utils/logger';
+import connection from '../connection';
 
 export const buscarTodasEscolas = async () => {
   try {
@@ -117,26 +119,75 @@ export const atualizarEscola = async (id: string, dados: Partial<Escola>) => {
   }
 };
 
-export const excluirEscola = async (id: string) => {
+// =====================================
+// EXCLUIR ESCOLA (COM VALIDAÇÃO DE INTEGRIDADE)
+// =====================================
+
+export const excluirEscola = async (id_escola: string): Promise<void> => {
   try {
-    logger.info(`Iniciando exclusão da escola com ID: ${id}`, 'escola');
+    logger.info(`Verificando se escola ${id_escola} pode ser excluída`, 'escola');
     
-    // Verificar se a escola existe
-    const escola = await EscolaModel.buscarPorId(id);
-    
+    // 1. Verificar se a escola existe
+    const escola = await EscolaModel.buscarPorId(id_escola);
     if (!escola) {
-      logger.warning(`Escola com ID ${id} não encontrada para exclusão`, 'escola');
-      throw new Error('Escola não encontrada');
+      throw new NotFoundError('Escola não encontrada');
     }
     
-    logger.debug(`Excluindo escola ${escola.nome_escola}`, 'escola');
-    await EscolaModel.excluir(id);
+    // 2. Verificar se existem registros de estoque para esta escola
+    const estoqueVinculado = await connection('estoque')
+      .where('id_escola', id_escola)
+      .count('* as total')
+      .first();
     
-    logger.success(`Escola ${escola.nome_escola} excluída com sucesso`, 'escola');
-    return {
-      mensagem: 'Escola excluída com sucesso'
-    };
+    const totalEstoque = Number(estoqueVinculado?.total || 0);
+    
+    if (totalEstoque > 0) {
+      logger.warning(`Escola ${id_escola} possui ${totalEstoque} registros de estoque`, 'escola');
+      throw new ConstraintViolationError(
+        `Não é possível excluir escola. Existem ${totalEstoque} registros de estoque para esta escola.`,
+        {
+          entidade: 'escola',
+          id: id_escola,
+          dependencias: {
+            estoque: totalEstoque
+          }
+        }
+      );
+    }
+    
+    // 3. Verificar se existem relacionamentos escola-segmento
+    const segmentosVinculados = await connection('escola_segmento')
+      .where('id_escola', id_escola)
+      .count('* as total')
+      .first();
+    
+    const totalSegmentos = Number(segmentosVinculados?.total || 0);
+    
+    if (totalSegmentos > 0) {
+      logger.warning(`Escola ${id_escola} possui ${totalSegmentos} segmentos vinculados`, 'escola');
+      throw new ConstraintViolationError(
+        `Não é possível excluir escola. Existem ${totalSegmentos} segmentos vinculados a esta escola.`,
+        {
+          entidade: 'escola',
+          id: id_escola,
+          dependencias: {
+            segmentos: totalSegmentos
+          }
+        }
+      );
+    }
+    
+    // 4. Se não há dependências, pode excluir
+    await EscolaModel.excluir(id_escola);
+    
+    logger.success(`Escola ${escola.nome_escola} (${id_escola}) excluída com sucesso`, 'escola');
+    
   } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ConstraintViolationError) {
+      // Re-throw errors customizados para serem tratados no controller
+      throw error;
+    }
+    
     if (error instanceof Error) {
       logger.error(`Erro ao excluir escola: ${error.message}`, 'escola');
       throw new Error(`Erro ao excluir escola: ${error.message}`);

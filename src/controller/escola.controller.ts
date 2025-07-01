@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as EscolaService from '../services/escola.service';
+import { ConstraintViolationError, NotFoundError } from '../utils/logger';
 
 export const listarEscolas = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -151,17 +152,30 @@ export const excluirEscola = async (req: Request, res: Response): Promise<void> 
       dados: resultado
     });
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({
+        status: 'erro',
+        codigo: 'NOT_FOUND',
+        mensagem: error.message
+      });
+    } else if (error instanceof ConstraintViolationError) {
+      res.status(409).json({
+        status: 'erro',
+        codigo: 'CONSTRAINT_VIOLATION',
+        mensagem: error.message,
+        detalhes: error.details
+      });
+    } else if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',
         mensagem: error.message
       });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
     }
-    
-    res.status(500).json({
-      status: 'erro',
-      mensagem: 'Erro interno do servidor'
-    });
   }
 };
 
