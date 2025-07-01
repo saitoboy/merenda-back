@@ -2,6 +2,8 @@ import * as SegmentoModel from '../model/segmento.model';
 import * as EscolaSegmentoModel from '../model/escola-segmento.model';
 import { Segmento } from '../types';
 import { gerarUUID, logger } from '../utils';
+import { ConstraintViolationError, NotFoundError } from '../utils/logger';
+import connection from '../connection';
 
 /**
  * Buscar todos os segmentos
@@ -160,25 +162,56 @@ export const atualizarSegmento = async (id: string, dados: Partial<Segmento>) =>
  */
 export const excluirSegmento = async (id: string) => {
   try {
-    logger.info(`Iniciando exclusão do segmento com ID: ${id}`, 'segmento');
+    logger.info(`Iniciando validação de integridade para exclusão do segmento com ID: ${id}`, 'segmento');
     
     // Verificar se o segmento existe
     const segmento = await SegmentoModel.buscarPorId(id);
     
     if (!segmento) {
       logger.warning(`Segmento com ID ${id} não encontrado para exclusão`, 'segmento');
-      throw new Error('Segmento não encontrado');
+      throw new NotFoundError('Segmento não encontrado');
     }
-    
-    // Verificar se existem escolas associadas a este segmento
-    logger.debug(`Verificando se existem escolas associadas ao segmento ${segmento.nome_segmento}`, 'segmento');
+
+    // Verificar dependências: relacionamentos escola-segmento
+    logger.debug(`Verificando relacionamentos escola-segmento para ${segmento.nome_segmento}`, 'segmento');
     const escolasAssociadas = await EscolaSegmentoModel.buscarEscolasPorSegmento(id);
     
+    // Verificar dependências: registros de estoque
+    logger.debug(`Verificando registros de estoque para ${segmento.nome_segmento}`, 'segmento');
+    const resultEstoque = await connection.raw(`
+      SELECT COUNT(*) as total
+      FROM estoque e
+      INNER JOIN escola_segmento es ON e.id_escola = es.id_escola
+      WHERE es.id_segmento = ?
+    `, [id]);
+    
+    const totalEstoque = parseInt(resultEstoque.rows?.[0]?.total || resultEstoque[0]?.total || '0');
+    
+    // Se há dependências, impedir exclusão
+    const dependencias: { [key: string]: number } = {};
     if (escolasAssociadas.length > 0) {
-      logger.warning(`Não é possível excluir o segmento ${segmento.nome_segmento} pois existem ${escolasAssociadas.length} escolas associadas`, 'segmento');
-      throw new Error(`Não é possível excluir o segmento pois existem ${escolasAssociadas.length} escolas associadas. Remova as associações primeiro.`);
+      dependencias.escolas = escolasAssociadas.length;
+    }
+    if (totalEstoque > 0) {
+      dependencias.estoque = totalEstoque;
     }
     
+    if (Object.keys(dependencias).length > 0) {
+      const detalhes = Object.entries(dependencias)
+        .map(([tipo, count]) => `${count} ${tipo}`)
+        .join(' e ');
+      
+      const mensagem = `Não é possível excluir segmento. Existem ${detalhes} vinculados a este segmento.`;
+      
+      logger.warning(mensagem, 'segmento');
+      throw new ConstraintViolationError(mensagem, {
+        entidade: 'segmento',
+        id,
+        dependencias
+      });
+    }
+    
+    // Se chegou até aqui, pode excluir
     logger.debug(`Excluindo segmento ${segmento.nome_segmento}`, 'segmento');
     await SegmentoModel.excluir(id);
     
@@ -187,6 +220,11 @@ export const excluirSegmento = async (id: string) => {
       mensagem: 'Segmento excluído com sucesso'
     };
   } catch (error) {
+    // Re-lançar erros customizados
+    if (error instanceof ConstraintViolationError || error instanceof NotFoundError) {
+      throw error;
+    }
+    
     if (error instanceof Error) {
       logger.error(`Erro ao excluir segmento: ${error.message}`, 'segmento');
       throw new Error(`Erro ao excluir segmento: ${error.message}`);

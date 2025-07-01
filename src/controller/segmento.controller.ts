@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as SegmentoService from '../services/segmento.service';
+import { ConstraintViolationError, NotFoundError } from '../utils/logger';
 
 // =====================================
 // CRUD BÁSICO DE SEGMENTOS
@@ -159,10 +160,27 @@ export const excluirSegmento = async (req: Request, res: Response): Promise<void
     
     res.status(200).json({
       status: 'sucesso',
-      mensagem: resultado.mensagem
+      mensagem: resultado.mensagem,
+      dados: {
+        id_segmento: id,
+        excluido_em: new Date().toISOString()
+      }
     });
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({
+        status: 'erro',
+        codigo: 'NOT_FOUND',
+        mensagem: error.message
+      });
+    } else if (error instanceof ConstraintViolationError) {
+      res.status(409).json({
+        status: 'erro',
+        codigo: 'CONSTRAINT_VIOLATION',
+        mensagem: error.message,
+        detalhes: error.details
+      });
+    } else if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',
         mensagem: error.message
