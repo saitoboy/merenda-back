@@ -89,7 +89,9 @@ export const buscarDetalhesEstoquePorEscola = async (id_escola: string, filtros?
     'item.preco_item',
     'escola.nome_escola',
     'segmento.nome_segmento',
-    'periodo_lancamento.nome_periodo'
+    'periodo_lancamento.mes',
+    'periodo_lancamento.ano',
+    'periodo_lancamento.data_referencia'
   );
   
   return estoqueDetalhado;
@@ -121,7 +123,9 @@ export const buscarItensAbaixoIdeal = async (id_escola: string, filtros?: Filtro
     'item.preco_item',
     'escola.nome_escola',
     'segmento.nome_segmento',
-    'periodo_lancamento.nome_periodo'
+    'periodo_lancamento.mes',
+    'periodo_lancamento.ano',
+    'periodo_lancamento.data_referencia'
   );
   
   return itensAbaixoIdeal;
@@ -273,13 +277,13 @@ export const obterResumoDashboard = async (id_escola: string) => {
   // Buscar período ativo
   const periodoAtivo = await connection('periodo_lancamento')
     .where('ativo', true)
-    .select('nome_periodo')
+    .select('mes', 'ano')
     .first();
   
   return {
     ...metricas,
     segmentos_ativos: Number(segmentosAtivos?.total || 0),
-    periodo_ativo: periodoAtivo?.nome_periodo || null
+    periodo_ativo: periodoAtivo ? `${periodoAtivo.mes}/${periodoAtivo.ano}` : null
   };
 };
 
@@ -375,7 +379,9 @@ export const buscarProximosValidade = async (id_escola: string, dias: number, fi
     'item.preco_item',
     'escola.nome_escola',
     'segmento.nome_segmento',
-    'periodo_lancamento.nome_periodo',
+    'periodo_lancamento.mes',
+    'periodo_lancamento.ano',
+    'periodo_lancamento.data_referencia',
     connection.raw('(estoque.validade - CURRENT_DATE) as dias_restantes')
   ).orderBy('estoque.validade', 'asc');
   

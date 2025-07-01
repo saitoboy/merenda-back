@@ -127,7 +127,9 @@ export interface EstoqueCompleto extends Estoque {
   nome_item?: string;
   unidade_medida?: string;
   nome_segmento?: string;
-  nome_periodo?: string;
+  mes?: number;
+  ano?: number;
+  data_referencia?: Date;
 }
 
 // Interface para escola com seus segmentos
