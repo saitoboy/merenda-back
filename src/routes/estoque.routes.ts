@@ -44,6 +44,13 @@ estoqueRouter.put('/numero-ideal/:id_escola/:id_item',
   EstoqueController.atualizarNumeroIdeal
 );
 
+// Nova rota: Atualizar data de validade (apenas ESCOLA pode)
+estoqueRouter.put('/validade/:id_estoque', 
+  autenticar, 
+  autorizarPor([TipoUsuario.ESCOLA]), 
+  EstoqueController.atualizarDataValidade
+);
+
 estoqueRouter.delete('/:id_escola/:id_item', 
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 

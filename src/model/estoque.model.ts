@@ -167,6 +167,23 @@ export const atualizar = async (id_estoque: string, dados: AtualizarEstoque): Pr
     .update(dados);
 };
 
+// Atualizar data de validade de um item no estoque por ID
+export const atualizarValidade = async (id_estoque: string, validade: Date): Promise<boolean> => {
+  try {
+    const updated = await connection(table)
+      .where({ id_estoque })
+      .update({ 
+        validade: validade.toISOString().split('T')[0],
+        atualizado_em: new Date()
+      });
+    
+    return updated > 0;
+  } catch (error) {
+    console.error('Erro ao atualizar validade:', error);
+    return false;
+  }
+};
+
 // Remover item de estoque por ID
 export const remover = async (id_estoque: string): Promise<void> => {
   await connection(table)

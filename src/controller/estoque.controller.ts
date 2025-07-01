@@ -8,7 +8,8 @@ import {
   atualizarNumeroIdeal as atualizarNumeroIdealService,
   removerItemEstoque,
   obterMetricasEstoque,
-  definirIdeaisEmLote
+  definirIdeaisEmLote,
+  atualizarDataValidade as atualizarDataValidadeService
 } from '../services/estoque.service';
 import { buscarSegmentosPorEscola } from '../model/escola-segmento.model';
 
@@ -370,6 +371,56 @@ export const listarSegmentosPorEscola = async (req: Request, res: Response): Pro
       status: 'sucesso',
       mensagem: 'Segmentos de estoque listados com sucesso',
       dados: segmentos
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+// =====================================
+// ATUALIZAR DATA DE VALIDADE (ESCOLA)
+// =====================================
+
+export const atualizarDataValidade = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id_estoque } = req.params;
+    const { data_validade } = req.body;
+
+    // Validar se a data foi fornecida
+    if (!data_validade) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Data de validade é obrigatória'
+      });
+      return;
+    }
+
+    // Converter string para Date
+    const novaValidade = new Date(data_validade);
+    if (isNaN(novaValidade.getTime())) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Formato de data inválido. Use YYYY-MM-DD'
+      });
+      return;
+    }
+
+    const resultado = await atualizarDataValidadeService(id_estoque, novaValidade);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      dados: resultado
     });
   } catch (error) {
     if (error instanceof Error) {

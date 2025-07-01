@@ -430,3 +430,45 @@ export const obterResumoDashboard = async (idEscola: string) => {
     }
   }
 };
+
+// =====================================
+// ATUALIZAR DATA DE VALIDADE (ESCOLA)
+// =====================================
+
+export const atualizarDataValidade = async (idEstoque: string, validade: Date) => {
+  try {
+    // Verificar se o item de estoque existe
+    const estoqueExistente = await EstoqueModel.buscarPorId(idEstoque);
+    if (!estoqueExistente) {
+      throw new Error('Item de estoque não encontrado');
+    }
+
+    // Validar se a data não é no passado
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    validade.setHours(0, 0, 0, 0);
+    
+    if (validade < hoje) {
+      throw new Error('Data de validade não pode ser no passado');
+    }
+
+    // Atualizar a data de validade
+    const sucesso = await EstoqueModel.atualizarValidade(idEstoque, validade);
+    
+    if (!sucesso) {
+      throw new Error('Falha ao atualizar data de validade');
+    }
+
+    return {
+      mensagem: 'Data de validade atualizada com sucesso',
+      id_estoque: idEstoque,
+      nova_validade: validade.toISOString().split('T')[0]
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Erro ao atualizar data de validade: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao atualizar data de validade');
+    }
+  }
+};
