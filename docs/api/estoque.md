@@ -1,30 +1,30 @@
-# Estoque
+# 📦 Estoque
 
-Esta seção contém as rotas relacionadas à gestão de estoque no sistema Merenda Smart Flow.
+Esta seção contém as rotas relacionadas à gestão de estoque no sistema Merenda Smart Flow com modelo normalizado (escola + segmento + período).
 
-## Conceito de Segmentos de Estoque
+## 📋 CRUD Básico
 
-O sistema permite gerenciar estoques separados por segmento escolar dentro de uma mesma escola. Isso possibilita que uma escola mantenha controle de estoques distintos para diferentes segmentos, como "infantil", "fundamental" e o estoque geral da "escola".
+### Listar Estoque
 
-- Cada item no estoque de uma escola pode existir em múltiplos segmentos, cada um com sua própria quantidade e valor ideal
-- O segmento padrão é "escola", usado quando nenhum segmento específico é informado
-- Os segmentos válidos para uma escola são definidos no seu cadastro, no campo `segmento_escola`
-- As rotas de API aceitam o parâmetro `segmento` para especificar o segmento de estoque a ser manipulado
+Retorna o estoque com filtros avançados baseados no modelo normalizado.
 
-## Listar Estoque por Escola
-
-Retorna todos os itens em estoque de uma determinada escola.
-
-**URL**: `/estoque/escola/:id_escola?segmento=segmento_valor`
+**URL**: `/estoque`
 
 **Método**: `GET`
 
-**Autenticação**: Opcional
+**Autenticação**: Requerida
 
-**Parâmetros de Consulta**:
-- `segmento` (opcional) - Filtra os resultados por segmento específico. Se não for fornecido, retorna todos os segmentos.
+#### Parâmetros da Query
 
-### Resposta de Sucesso
+- `id_escola` (opcional): Filtra por escola específica
+- `id_segmento` (opcional): Filtra por segmento específico
+- `id_periodo` (opcional): Filtra por período específico
+- `id_item` (opcional): Filtra por item específico
+- `quantidade_minima` (opcional): Filtra itens com quantidade menor que o especificado
+- `validade_proxima` (opcional): Filtra itens com validade próxima (formato: YYYY-MM-DD)
+- `com_detalhes` (opcional): Se `true`, inclui dados relacionados (escola, item, segmento, período)
+
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
@@ -34,689 +34,683 @@ Retorna todos os itens em estoque de uma determinada escola.
   "mensagem": "Estoque listado com sucesso",
   "dados": [
     {
+      "id_estoque": "uuid-estoque-1",
       "id_escola": "uuid-escola-1",
       "id_item": "uuid-item-1",
-      "segmento_estoque": "escola",
-      "quantidade_item": 15,
-      "numero_ideal": 20,
-      "validade": "2023-12-31",
-      "observacao": "Lote recente",
-      "nome_item": "Arroz Integral",
-      "unidade_medida": "Kg",
-      "preco_item": 7.50
-    },
-    {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-2",
-      "segmento_estoque": "infantil",
-      "quantidade_item": 8,
-      "numero_ideal": 10,
-      "validade": "2023-10-15",
-      "observacao": null,
-      "nome_item": "Feijão Carioca",
-      "unidade_medida": "Kg",
-      "preco_item": 9.20
+      "id_segmento": "uuid-segmento-1",
+      "id_periodo": "uuid-periodo-1",
+      "quantidade_item": 50,
+      "numero_ideal": 100,
+      "validade": "2024-12-31",
+      "observacao": "Lote recebido em bom estado",
+      "nome_escola": "Escola Municipal João da Silva",
+      "nome_item": "Arroz Integral 1kg",
+      "unidade_medida": "kg",
+      "nome_segmento": "Ensino Fundamental",
+      "nome_periodo": "1º Semestre 2024"
     }
   ]
 }
 ```
 
-### Respostas de Erro
+#### Códigos de Erro
 
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Escola não encontrada"
-}
-```
+- `401`: Token de autenticação inválido
+- `403`: Usuário sem permissão para visualizar estoque
+- `500`: Erro interno do servidor
 
 ---
 
-## Listar Itens Abaixo do Ideal
+### Buscar Estoque por ID
 
-Retorna todos os itens cujo estoque está abaixo do número ideal definido.
+Retorna informações detalhadas de um item específico do estoque.
 
-**URL**: `/estoque/escola/:id_escola/abaixo-ideal?segmento=segmento_valor`
+**URL**: `/estoque/:id`
 
 **Método**: `GET`
 
-**Autenticação**: Opcional
+**Autenticação**: Requerida
 
-**Parâmetros de Consulta**:
-- `segmento` (opcional) - Filtra os resultados por segmento específico. Se não for fornecido, retorna todos os segmentos.
+#### Parâmetros da URL
 
-### Resposta de Sucesso
+- `id`: ID do estoque (UUID)
 
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Itens abaixo do ideal listados com sucesso",
-  "dados": [
-    {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-1",
-      "segmento_estoque": "escola",
-      "quantidade_item": 15,
-      "numero_ideal": 20,
-      "validade": "2023-12-31",
-      "observacao": "Lote antigo",
-      "nome_item": "Arroz Integral",
-      "unidade_medida": "Kg",
-      "preco_item": 7.50
-    },
-    {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-3",
-      "segmento_estoque": "infantil",
-      "quantidade_item": 5,
-      "numero_ideal": 12,
-      "validade": "2023-11-30",
-      "observacao": null,
-      "nome_item": "Leite em Pó",
-      "unidade_medida": "Kg",
-      "preco_item": 22.90
-    }
-  ]
-}
-```
-
----
-
-## Obter Métricas de Estoque
-
-Retorna métricas e estatísticas sobre o estoque de uma escola.
-
-**URL**: `/estoque/escola/:id_escola/metricas?segmento=segmento_valor`
-
-**Método**: `GET`
-
-**Autenticação**: Opcional
-
-**Parâmetros de Consulta**:
-- `segmento` (opcional) - Filtra as métricas por segmento específico. Se não for fornecido, considera todos os segmentos.
-
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Métricas obtidas com sucesso",
+  "mensagem": "Estoque encontrado",
   "dados": {
-    "total_itens": 12,
-    "itens_abaixo_ideal": 3,
-    "itens_zerados": 1,
-    "itens_proximos_validade": 2,
-    "valor_total_estoque": 1250.75
+    "id_estoque": "uuid-estoque-1",
+    "id_escola": "uuid-escola-1",
+    "id_item": "uuid-item-1",
+    "id_segmento": "uuid-segmento-1",
+    "id_periodo": "uuid-periodo-1",
+    "quantidade_item": 50,
+    "numero_ideal": 100,
+    "validade": "2024-12-31",
+    "observacao": "Lote recebido em bom estado",
+    "nome_escola": "Escola Municipal João da Silva",
+    "nome_item": "Arroz Integral 1kg",
+    "unidade_medida": "kg",
+    "nome_segmento": "Ensino Fundamental",
+    "nome_periodo": "1º Semestre 2024"
   }
 }
 ```
 
----
+#### Códigos de Erro
 
-## Atualizar Quantidade de Item
-
-Atualiza a quantidade em estoque de um item em uma escola.
-
-**URL**: `/estoque/quantidade/:id_escola/:id_item`
-
-**Método**: `PUT`
-
-**Autenticação**: Requerida (Admin, Gestor Escolar, Nutricionista)
-
-### Corpo da Requisição
-
-```json
-{
-  "quantidade_item": 25,
-  "segmento": "escola"  /* opcional, padrão é "escola" */
-}
-```
-
-### Resposta de Sucesso
-
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Quantidade atualizada com sucesso",
-  "dados": {
-    "mensagem": "Quantidade atualizada com sucesso"
-  }
-}
-```
-
-### Respostas de Erro
-
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Quantidade é obrigatória"
-}
-```
-
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Item não encontrado no estoque desta escola"
-}
-```
+- `404`: Estoque não encontrado
+- `401`: Token de autenticação inválido
+- `403`: Usuário sem permissão para visualizar este estoque
 
 ---
 
-## Atualizar Número Ideal de Item
+### Criar Novo Item no Estoque
 
-Atualiza o número ideal de um item em uma escola.
+Adiciona um novo item ao estoque de uma escola específica para um segmento e período.
 
-**URL**: `/estoque/numero-ideal/:id_escola/:id_item`
-
-**Método**: `PUT`
-
-**Autenticação**: Requerida (Admin, Gestor Escolar, Nutricionista)
-
-### Corpo da Requisição
-
-```json
-{
-  "numero_ideal": 30,
-  "segmento": "escola"  /* opcional, padrão é "escola" */
-}
-```
-
-### Resposta de Sucesso
-
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Número ideal atualizado com sucesso",
-  "dados": {
-    "mensagem": "Número ideal atualizado com sucesso"
-  }
-}
-```
-
-### Respostas de Erro
-
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Número ideal é obrigatório"
-}
-```
-
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Item não encontrado no estoque desta escola"
-}
-```
-
----
-
-## Definir Valores Ideais em Lote
-
-Define valores ideais para múltiplas combinações de escola e item de uma vez.
-
-**URL**: `/estoque/ideais`
+**URL**: `/estoque`
 
 **Método**: `POST`
 
-**Autenticação**: Requerida (Admin, Nutricionista)
+**Autenticação**: Requerida
 
-### Corpo da Requisição
+**Permissões**: Admin, Nutricionista, Gestor Escolar (apenas da própria escola)
 
-```json
-{
-  "ideais": [
-    {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-1",
-      "numero_ideal": 25,
-      "segmento": "escola"
-    },
-    {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-2",
-      "numero_ideal": 15,
-      "segmento": "infantil"
-    },
-    {
-      "id_escola": "uuid-escola-2",
-      "id_item": "uuid-item-1",
-      "numero_ideal": 20
-    }
-  ]
-}
-```
-
-### Resposta de Sucesso
-
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Valores ideais definidos com sucesso",
-  "dados": {
-    "mensagem": "3 valores ideais processados com sucesso",
-    "detalhes": [
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-1",
-        "segmento_estoque": "escola",
-        "numero_ideal": 25,
-        "acao": "atualizado"
-      },
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-2",
-        "segmento_estoque": "infantil",
-        "numero_ideal": 15,
-        "acao": "atualizado"
-      },
-      {
-        "id_escola": "uuid-escola-2",
-        "id_item": "uuid-item-1",
-        "segmento_estoque": "escola",
-        "numero_ideal": 20,
-        "acao": "criado"
-      }
-    ]
-  }
-}
-```
-
-### Respostas de Erro
-
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Formato inválido. Esperado um array de itens com id_escola, id_item e numero_ideal"
-}
-```
-
----
-
-## Definir Valores Ideais por Escola
-
-Define valores ideais para múltiplos itens de uma mesma escola.
-
-**URL**: `/estoque/ideais/:id_escola`
-
-**Método**: `POST`
-
-**Autenticação**: Requerida (Admin, Nutricionista)
-
-### Corpo da Requisição
-
-```json
-{
-  "itens_ideais": [
-    { "id_item": "uuid-item-1", "numero_ideal": 30, "segmento": "escola" },
-    { "id_item": "uuid-item-2", "numero_ideal": 20, "segmento": "infantil" },
-    { "id_item": "uuid-item-3", "numero_ideal": 15 },
-    { "id_item": "uuid-item-4", "numero_ideal": 25, "segmento": "fundamental" }
-  ]
-}
-```
-
-### Resposta de Sucesso
-
-**Código**: `200 OK`
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Valores ideais definidos com sucesso para a escola uuid-escola-1",
-  "dados": {
-    "mensagem": "4 valores ideais processados com sucesso",
-    "detalhes": [
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-1",
-        "segmento_estoque": "escola",
-        "numero_ideal": 30,
-        "acao": "atualizado"
-      },
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-2",
-        "segmento_estoque": "infantil",
-        "numero_ideal": 20,
-        "acao": "atualizado"
-      },
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-3",
-        "segmento_estoque": "escola",
-        "numero_ideal": 15,
-        "acao": "atualizado"
-      },
-      {
-        "id_escola": "uuid-escola-1",
-        "id_item": "uuid-item-4",
-        "segmento_estoque": "fundamental",
-        "numero_ideal": 25,
-        "acao": "criado"
-      }
-    ]
-  }
-}
-```
-
-### Respostas de Erro
-
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Formato inválido. Esperado um array de itens com id_item e numero_ideal"
-}
-```
-
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Escola não encontrada"
-}
-```
-
----
-
-## Adicionar Item ao Estoque
-
-Adiciona um novo item ao estoque de uma escola.
-
-**URL**: `/estoque/adicionar`
-
-**Método**: `POST`
-
-**Autenticação**: Requerida (Admin, Gestor Escolar)
-
-### Corpo da Requisição
+#### Corpo da Requisição
 
 ```json
 {
   "id_escola": "uuid-escola-1",
-  "id_item": "uuid-item-5",
-  "quantidade_item": 10,
-  "numero_ideal": 15,
-  "segmento_estoque": "infantil"
+  "id_item": "uuid-item-1",
+  "id_segmento": "uuid-segmento-1",
+  "id_periodo": "uuid-periodo-1",
+  "quantidade_item": 50,
+  "numero_ideal": 100,
+  "validade": "2024-12-31",
+  "observacao": "Lote recebido em bom estado"
 }
 ```
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
-**Código**: `201 CREATED`
+**Código**: `201 Created`
 
 ```json
 {
   "status": "sucesso",
   "mensagem": "Item adicionado ao estoque com sucesso",
   "dados": {
-    "mensagem": "Item adicionado ao estoque com sucesso",
-    "item": {
-      "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-5",
-      "segmento_estoque": "infantil",
-      "quantidade_item": 10,
-      "numero_ideal": 15
-    }
+    "id_estoque": "uuid-estoque-novo",
+    "id_escola": "uuid-escola-1",
+    "id_item": "uuid-item-1",
+    "id_segmento": "uuid-segmento-1",
+    "id_periodo": "uuid-periodo-1",
+    "quantidade_item": 50,
+    "numero_ideal": 100,
+    "validade": "2024-12-31",
+    "observacao": "Lote recebido em bom estado"
   }
 }
 ```
 
-### Respostas de Erro
+#### Códigos de Erro
 
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Escola, item, quantidade e número ideal são obrigatórios"
-}
-```
-
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Escola não encontrada"
-}
-```
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Item não encontrado"
-}
-```
-
-**Código**: `409 CONFLICT`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Este item já existe no estoque desta escola"
-}
-```
+- `400`: Dados inválidos ou incompletos
+- `409`: Combinação escola+item+segmento+período já existe
+- `403`: Usuário sem permissão para adicionar estoque
+- `404`: Escola, item, segmento ou período não encontrado
 
 ---
 
-## Remover Item do Estoque
+### Atualizar Item do Estoque
 
-Remove um item do estoque de uma escola.
+Atualiza informações de um item específico do estoque.
 
-**URL**: `/estoque/:id_escola/:id_item?segmento=segmento_valor`
+**URL**: `/estoque/:id`
+
+**Método**: `PUT`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista, Gestor Escolar (apenas da própria escola)
+
+#### Parâmetros da URL
+
+- `id`: ID do estoque (UUID)
+
+#### Corpo da Requisição
+
+```json
+{
+  "quantidade_item": 75,
+  "numero_ideal": 120,
+  "validade": "2024-11-30",
+  "observacao": "Quantidade atualizada após inventário"
+}
+```
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Estoque atualizado com sucesso",
+  "dados": {
+    "id_estoque": "uuid-estoque-1",
+    "id_escola": "uuid-escola-1",
+    "id_item": "uuid-item-1",
+    "id_segmento": "uuid-segmento-1",
+    "id_periodo": "uuid-periodo-1",
+    "quantidade_item": 75,
+    "numero_ideal": 120,
+    "validade": "2024-11-30",
+    "observacao": "Quantidade atualizada após inventário"
+  }
+}
+```
+
+#### Códigos de Erro
+
+- `404`: Estoque não encontrado
+- `400`: Dados inválidos
+- `403`: Usuário sem permissão para atualizar este estoque
+
+---
+
+### Excluir Item do Estoque
+
+Remove um item específico do estoque.
+
+**URL**: `/estoque/:id`
 
 **Método**: `DELETE`
 
-**Autenticação**: Requerida (Admin, Gestor Escolar)
+**Autenticação**: Requerida
 
-**Parâmetros de Consulta**:
-- `segmento` (opcional) - Define o segmento do estoque. Se não for fornecido, usa o valor padrão "escola".
+**Permissões**: Admin, Nutricionista
 
-### Resposta de Sucesso
+#### Parâmetros da URL
+
+- `id`: ID do estoque (UUID)
+
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Item removido do estoque com sucesso",
+  "mensagem": "Item removido do estoque com sucesso"
+}
+```
+
+#### Códigos de Erro
+
+- `404`: Estoque não encontrado
+- `403`: Usuário sem permissão para excluir estoque
+
+---
+
+## 📊 Consultas Avançadas
+
+### Estoque por Escola e Segmento
+
+Consulta otimizada para visualizar estoque específico de uma escola e segmento.
+
+**URL**: `/estoque/escola/:id_escola/segmento/:id_segmento`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+#### Parâmetros da URL
+
+- `id_escola`: ID da escola (UUID)
+- `id_segmento`: ID do segmento (UUID)
+
+#### Parâmetros da Query
+
+- `id_periodo` (opcional): Filtra por período específico
+- `apenas_baixo_estoque` (opcional): Se `true`, retorna apenas itens com quantidade abaixo do ideal
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Estoque da escola e segmento listado com sucesso",
   "dados": {
-    "mensagem": "Item removido do estoque com sucesso"
+    "escola": {
+      "id_escola": "uuid-escola-1",
+      "nome_escola": "Escola Municipal João da Silva"
+    },
+    "segmento": {
+      "id_segmento": "uuid-segmento-1",
+      "nome_segmento": "Ensino Fundamental"
+    },
+    "periodo_ativo": {
+      "id_periodo": "uuid-periodo-1",
+      "nome_periodo": "1º Semestre 2024"
+    },
+    "itens": [
+      {
+        "id_estoque": "uuid-estoque-1",
+        "id_item": "uuid-item-1",
+        "nome_item": "Arroz Integral 1kg",
+        "quantidade_item": 30,
+        "numero_ideal": 100,
+        "percentual_ideal": 30,
+        "status_estoque": "baixo",
+        "validade": "2024-12-31",
+        "dias_para_vencer": 180
+      }
+    ],
+    "resumo": {
+      "total_itens": 25,
+      "itens_baixo_estoque": 8,
+      "itens_estoque_adequado": 17,
+      "itens_proximos_validade": 3
+    }
   }
 }
 ```
 
-### Respostas de Erro
-
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Item não encontrado no estoque desta escola"
-}
-```
-
-## Notas de Implementação
-
-- O sistema diferencia entre `quantidade_item` (quantidade atual) e `numero_ideal` (quantidade que deveria ter)
-- Quando novos itens são adicionados apenas via gestão de valores ideais, sua quantidade é inicializada como zero
-- Ao definir valores ideais em lote, o sistema cria automaticamente registros de estoque para combinações de escola-item que não existiam
-- O valor `numero_ideal` é usado para identificar quando o estoque está baixo e pode gerar alertas ou sugestões de pedidos
-- O campo `segmento_estoque` permite controlar estoques separados por segmento (ex: "infantil", "fundamental", "escola")
-- Quando o `segmento_estoque` não é especificado nas requisições, o sistema usa o valor padrão "escola"
-- Os segmentos válidos para uma escola são definidos no campo `segmento_escola` no cadastro da escola
-- A chave primária do estoque agora é composta por (id_escola, id_item, segmento_estoque)
-
-## Exemplos de Uso com Segmentos
-
-### Consultando o estoque de um segmento específico
-
-```
-GET /estoque/escola/uuid-escola-1?segmento=infantil
-```
-
-### Atualizando a quantidade de um item em um segmento específico
-
-```
-PUT /estoque/quantidade/uuid-escola-1/uuid-item-1
-```
-```json
-{
-  "quantidade_item": 25,
-  "segmento": "fundamental"
-}
-```
-
-### Definindo valores ideais para diferentes segmentos em uma mesma escola
-
-```
-POST /estoque/ideais/uuid-escola-1
-```
-```json
-{
-  "itens_ideais": [
-    { "id_item": "uuid-item-1", "numero_ideal": 30, "segmento": "escola" },
-    { "id_item": "uuid-item-1", "numero_ideal": 15, "segmento": "infantil" },
-    { "id_item": "uuid-item-1", "numero_ideal": 20, "segmento": "fundamental" }
-  ]
-}
-```
-
-### Removendo um item de um segmento específico
-
-```
-DELETE /estoque/uuid-escola-1/uuid-item-1?segmento=infantil
-```
-
 ---
 
-## Listar Itens Próximos da Validade
+### Estoque com Alertas
 
-Retorna todos os itens em estoque que estão próximos da data de validade dentro do período especificado em dias.
+Consulta itens do estoque que precisam de atenção (baixo estoque ou validade próxima).
 
-**URL**: `/estoque/escola/:id_escola/proximos-validade/:dias`
+**URL**: `/estoque/alertas`
 
 **Método**: `GET`
 
-**Autenticação**: Opcional
+**Autenticação**: Requerida
 
-**Parâmetros**:
-- `id_escola` - ID da escola
-- `dias` - Número de dias para considerar como "próximo da validade" (ex: 7 para 7 dias)
+#### Parâmetros da Query
 
-### Resposta de Sucesso
+- `id_escola` (opcional): Filtra por escola específica
+- `id_segmento` (opcional): Filtra por segmento específico
+- `dias_validade` (opcional): Número de dias para considerar validade próxima (padrão: 30)
+- `percentual_minimo` (opcional): Percentual mínimo do ideal para considerar baixo estoque (padrão: 20)
+
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Itens próximos da validade listados com sucesso",
-  "dados": [
+  "mensagem": "Alertas de estoque gerados com sucesso",
+  "dados": {
+    "baixo_estoque": [
+      {
+        "id_estoque": "uuid-estoque-1",
+        "nome_escola": "Escola Municipal João da Silva",
+        "nome_segmento": "Ensino Fundamental",
+        "nome_item": "Arroz Integral 1kg",
+        "quantidade_item": 15,
+        "numero_ideal": 100,
+        "percentual_ideal": 15,
+        "urgencia": "alta"
+      }
+    ],
+    "validade_proxima": [
+      {
+        "id_estoque": "uuid-estoque-2",
+        "nome_escola": "Escola Municipal Maria Santos",
+        "nome_segmento": "Educação Infantil",
+        "nome_item": "Leite em Pó 1kg",
+        "quantidade_item": 50,
+        "validade": "2024-02-15",
+        "dias_para_vencer": 10,
+        "urgencia": "critica"
+      }
+    ],
+    "resumo": {
+      "total_alertas": 12,
+      "baixo_estoque": 8,
+      "validade_proxima": 4,
+      "urgencia_critica": 2,
+      "urgencia_alta": 6,
+      "urgencia_media": 4
+    }
+  }
+}
+```
+
+---
+
+### Estatísticas de Estoque por Período
+
+Consulta estatísticas consolidadas de estoque para um período específico.
+
+**URL**: `/estoque/estatisticas/periodo/:id_periodo`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista
+
+#### Parâmetros da URL
+
+- `id_periodo`: ID do período (UUID)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Estatísticas de estoque geradas com sucesso",
+  "dados": {
+    "periodo": {
+      "id_periodo": "uuid-periodo-1",
+      "nome_periodo": "1º Semestre 2024"
+    },
+    "por_escola": [
+      {
+        "id_escola": "uuid-escola-1",
+        "nome_escola": "Escola Municipal João da Silva",
+        "total_itens": 150,
+        "itens_adequados": 120,
+        "itens_baixo_estoque": 25,
+        "itens_sem_estoque": 5,
+        "percentual_adequacao": 80
+      }
+    ],
+    "por_segmento": [
+      {
+        "id_segmento": "uuid-segmento-1",
+        "nome_segmento": "Ensino Fundamental",
+        "escolas_atendidas": 15,
+        "total_itens": 1250,
+        "media_adequacao": 75.5
+      }
+    ],
+    "resumo_geral": {
+      "total_escolas": 25,
+      "total_segmentos": 4,
+      "total_itens_estoque": 3750,
+      "percentual_adequacao_geral": 72.8,
+      "itens_criticos": 45,
+      "valor_total_estoque": 125750.80
+    }
+  }
+}
+```
+
+---
+
+## 🔄 Operações em Lote
+
+### Importação de Estoque
+
+Importa múltiplos itens de estoque via CSV ou JSON.
+
+**URL**: `/estoque/importar`
+
+**Método**: `POST`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista
+
+#### Corpo da Requisição (JSON)
+
+```json
+{
+  "itens": [
     {
       "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-2",
-      "segmento_estoque": "escola",
-      "quantidade_item": 8,
-      "numero_ideal": 10,
-      "validade": "2023-10-15",
-      "observacao": "Lote especial",
-      "nome_item": "Feijão Carioca",
-      "unidade_medida": "Kg",
-      "preco_item": 9.20,
-      "dias_restantes": 5
+      "id_item": "uuid-item-1",
+      "id_segmento": "uuid-segmento-1",
+      "id_periodo": "uuid-periodo-1",
+      "quantidade_item": 50,
+      "numero_ideal": 100,
+      "validade": "2024-12-31"
     },
     {
       "id_escola": "uuid-escola-1",
-      "id_item": "uuid-item-5",
-      "segmento_estoque": "infantil",
-      "quantidade_item": 3,
-      "numero_ideal": 8,
-      "validade": "2023-10-20",
-      "observacao": null,
-      "nome_item": "Leite em Pó",
-      "unidade_medida": "Kg",
-      "preco_item": 22.50,
-      "dias_restantes": 10
+      "id_item": "uuid-item-2",
+      "id_segmento": "uuid-segmento-1",
+      "id_periodo": "uuid-periodo-1",
+      "quantidade_item": 30,
+      "numero_ideal": 80
     }
   ]
 }
 ```
 
-### Respostas de Erro
+#### Resposta de Sucesso
 
-**Código**: `404 NOT FOUND`
+**Código**: `201 Created` ou `207 Multi-Status` (sucesso parcial)
 
 ```json
 {
-  "status": "erro",
-  "mensagem": "Escola não encontrada"
+  "status": "sucesso",
+  "mensagem": "Importação de estoque concluída",
+  "dados": {
+    "total_processados": 2,
+    "sucessos": 2,
+    "erros": 0,
+    "itens_criados": [
+      {
+        "id_estoque": "uuid-estoque-novo-1",
+        "linha": 1,
+        "status": "criado"
+      },
+      {
+        "id_estoque": "uuid-estoque-novo-2",
+        "linha": 2,
+        "status": "criado"
+      }
+    ],
+    "erros_detalhados": []
+  }
 }
 ```
 
 ---
 
-## Listar Segmentos de Estoque por Escola
+### Atualização em Lote de Valores Ideais
 
-Retorna todos os segmentos de estoque distintos que uma escola possui.
+Atualiza valores ideais para múltiplos itens de uma escola/segmento.
 
-**URL**: `/estoque/escola/:id_escola/segmentos`
+**URL**: `/estoque/valores-ideais`
 
-**Método**: `GET`
+**Método**: `PUT`
 
-**Autenticação**: Opcional
+**Autenticação**: Requerida
 
-### Resposta de Sucesso
+**Permissões**: Admin, Nutricionista
+
+#### Corpo da Requisição
+
+```json
+{
+  "id_escola": "uuid-escola-1",
+  "id_segmento": "uuid-segmento-1",
+  "id_periodo": "uuid-periodo-1",
+  "valores": [
+    {
+      "id_item": "uuid-item-1",
+      "numero_ideal": 120
+    },
+    {
+      "id_item": "uuid-item-2",
+      "numero_ideal": 90
+    }
+  ]
+}
+```
+
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Segmentos de estoque listados com sucesso",
-  "dados": [
-    "escola",
-    "infantil",
-    "fundamental",
-    "proeja"
-  ]
+  "mensagem": "Valores ideais atualizados com sucesso",
+  "dados": {
+    "atualizados": 2,
+    "nao_encontrados": 0,
+    "detalhes": [
+      {
+        "id_item": "uuid-item-1",
+        "nome_item": "Arroz Integral 1kg",
+        "valor_anterior": 100,
+        "valor_novo": 120,
+        "status": "atualizado"
+      }
+    ]
+  }
 }
 ```
 
-### Resposta de Erro
+---
 
-**Código**: `404 NOT FOUND`
+## 🎯 Dashboard de Estoque
+
+### Resumo do Dashboard por Escola
+
+Retorna métricas consolidadas para dashboard de uma escola específica.
+
+**URL**: `/estoque/dashboard/escola/:id_escola`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista, Gestor Escolar (apenas da própria escola)
+
+#### Parâmetros da URL
+
+- `id_escola`: ID da escola (UUID)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
 
 ```json
 {
-  "status": "erro",
-  "mensagem": "Escola não encontrada"
+  "status": "sucesso",
+  "mensagem": "Dashboard de estoque gerado com sucesso",
+  "dados": {
+    "escola": {
+      "id_escola": "uuid-escola-1",
+      "nome_escola": "Escola Municipal João da Silva"
+    },
+    "periodo_ativo": {
+      "id_periodo": "uuid-periodo-1",
+      "nome_periodo": "1º Semestre 2024"
+    },
+    "metricas": {
+      "total_itens": 45,
+      "itens_baixo_estoque": 12,
+      "itens_proximos_validade": 5,
+      "segmentos_ativos": 2,
+      "percentual_adequacao": 73.3,
+      "valor_total_estoque": 8750.50
+    },
+    "por_segmento": [
+      {
+        "id_segmento": "uuid-segmento-1",
+        "nome_segmento": "Ensino Fundamental",
+        "total_itens": 30,
+        "itens_adequados": 22,
+        "itens_baixo_estoque": 8,
+        "percentual_adequacao": 73.3
+      },
+      {
+        "id_segmento": "uuid-segmento-2",
+        "nome_segmento": "Educação Infantil",
+        "total_itens": 15,
+        "itens_adequados": 11,
+        "itens_baixo_estoque": 4,
+        "percentual_adequacao": 73.3
+      }
+    ],
+    "alertas_urgentes": [
+      {
+        "tipo": "estoque_critico",
+        "item": "Arroz Integral 1kg",
+        "segmento": "Ensino Fundamental",
+        "quantidade": 5,
+        "ideal": 100,
+        "percentual": 5
+      }
+    ]
+  }
 }
 ```
+
+---
+
+## 📋 Tabela de Permissões
+
+| Rota | Admin | Nutricionista | Gestor Escolar | Fornecedor |
+|------|-------|---------------|----------------|------------|
+| `GET /estoque` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `GET /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `POST /estoque` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `PUT /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `DELETE /estoque/:id` | ✅ | ✅ | ❌ | ❌ |
+| `GET /estoque/escola/:id/segmento/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `GET /estoque/alertas` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `GET /estoque/estatisticas/periodo/:id` | ✅ | ✅ | ❌ | ❌ |
+| `POST /estoque/importar` | ✅ | ✅ | ❌ | ❌ |
+| `PUT /estoque/valores-ideais` | ✅ | ✅ | ❌ | ❌ |
+| `GET /estoque/dashboard/escola/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+
+## 🔍 Códigos de Status
+
+- **200**: Operação realizada com sucesso
+- **201**: Recurso criado com sucesso
+- **207**: Multi-status (importação com erros parciais)
+- **400**: Erro de validação ou dados inválidos
+- **401**: Token de autenticação inválido ou ausente
+- **403**: Usuário sem permissão para a operação
+- **404**: Recurso não encontrado
+- **409**: Conflito (registro duplicado)
+- **500**: Erro interno do servidor
+
+---
+
+## 📝 Observações
+
+### Modelo Normalizado
+
+O estoque agora utiliza um modelo completamente normalizado com:
+- **Escola**: Entidade principal de organização
+- **Segmento**: Subdivisão educacional dentro da escola
+- **Período**: Controle temporal de lançamentos
+- **Item**: Produto/alimento gerenciado
+
+### Chave Composta
+
+Cada entrada de estoque é única pela combinação: `escola + item + segmento + período`
+
+### Alertas Inteligentes
+
+O sistema gera alertas automáticos baseados em:
+- Percentual do valor ideal (padrão: < 20% = crítico)
+- Dias para vencimento (padrão: < 30 dias = atenção)
+- Configurações personalizáveis por escola/segmento
+
+### Auditoria
+
+Todas as operações de estoque são registradas para fins de auditoria e rastreabilidade.

@@ -1,22 +1,28 @@
-# Escolas
+# 🏫 Escolas
 
 Esta seção contém as rotas relacionadas à gestão de escolas no sistema Merenda Smart Flow.
 
-## Listar Escolas
+## 📋 CRUD Básico
 
-Retorna todas as escolas cadastradas no sistema.
+### Listar Escolas
+
+Retorna todas as escolas cadastradas no sistema com filtros avançados.
 
 **URL**: `/escolas`
 
 **Método**: `GET`
 
-**Autenticação**: Opcional
+**Autenticação**: Não requerida
 
-### Parâmetros da Query
+#### Parâmetros da Query
 
-- `segmento` (opcional): Filtra escolas por segmento (ex: "fundamental", "infantil", "medio", "eja", "creche")
+- `segmento` (opcional): Filtra escolas por ID do segmento
+- `nome` (opcional): Filtra escolas por nome (busca parcial)
+- `email` (opcional): Filtra escolas por email (busca parcial)
+- `endereco` (opcional): Filtra escolas por endereço (busca parcial)
+- `com_segmentos` (opcional): Se `true`, inclui lista de segmentos da escola
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
@@ -30,14 +36,15 @@ Retorna todas as escolas cadastradas no sistema.
       "nome_escola": "Escola Municipal João da Silva",
       "endereco_escola": "Rua das Flores, 123",
       "email_escola": "joaodasilva@edu.exemplo.com",
-      "segmento_escola": ["fundamental", "medio"]
-    },
-    {
-      "id_escola": "uuid-escola-2",
-      "nome_escola": "Creche Municipal Pequeno Príncipe",
-      "endereco_escola": "Av. dos Sonhos, 456",
-      "email_escola": "pequenoprincipe@edu.exemplo.com",
-      "segmento_escola": ["infantil"]
+      "created_at": "2023-01-15T10:30:00Z",
+      "updated_at": "2023-06-20T14:15:00Z",
+      "segmentos": [
+        {
+          "id_segmento": "uuid-segmento-1",
+          "nome_segmento": "Ensino Fundamental",
+          "descricao_segmento": "1º ao 9º ano"
+        }
+      ]
     }
   ]
 }
@@ -45,17 +52,17 @@ Retorna todas as escolas cadastradas no sistema.
 
 ---
 
-## Buscar Escola
+### Buscar Escola por ID
 
-Retorna os dados de uma escola específica.
+Retorna os dados detalhados de uma escola específica.
 
-**URL**: `/escolas/:id_escola`
+**URL**: `/escolas/:id`
 
 **Método**: `GET`
 
-**Autenticação**: Opcional
+**Autenticação**: Não requerida
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
@@ -68,12 +75,20 @@ Retorna os dados de uma escola específica.
     "nome_escola": "Escola Municipal João da Silva",
     "endereco_escola": "Rua das Flores, 123",
     "email_escola": "joaodasilva@edu.exemplo.com",
-    "segmento_escola": ["fundamental", "medio"]
+    "created_at": "2023-01-15T10:30:00Z",
+    "updated_at": "2023-06-20T14:15:00Z",
+    "segmentos": [
+      {
+        "id_segmento": "uuid-segmento-1",
+        "nome_segmento": "Ensino Fundamental",
+        "descricao_segmento": "1º ao 9º ano"
+      }
+    ]
   }
 }
 ```
 
-### Respostas de Erro
+#### Respostas de Erro
 
 **Código**: `404 NOT FOUND`
 
@@ -86,7 +101,7 @@ Retorna os dados de uma escola específica.
 
 ---
 
-## Criar Escola
+### Criar Escola
 
 Adiciona uma nova escola ao sistema.
 
@@ -94,20 +109,19 @@ Adiciona uma nova escola ao sistema.
 
 **Método**: `POST`
 
-**Autenticação**: Requerida (Admin, Nutricionista)
+**Autenticação**: Sim (Admin, Nutricionista)
 
-### Corpo da Requisição
+#### Corpo da Requisição
 
 ```json
 {
   "nome_escola": "Escola Municipal Monteiro Lobato",
   "endereco_escola": "Rua das Letras, 789",
-  "email_escola": "monteirolobato@edu.exemplo.com",
-  "segmento_escola": ["fundamental", "medio"]
+  "email_escola": "monteirolobato@edu.exemplo.com"
 }
 ```
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `201 CREATED`
 
@@ -116,23 +130,19 @@ Adiciona uma nova escola ao sistema.
   "status": "sucesso",
   "mensagem": "Escola criada com sucesso",
   "dados": {
-    "id_escola": "uuid-nova-escola",
-    "nome_escola": "Escola Municipal Monteiro Lobato",
-    "endereco_escola": "Rua das Letras, 789",
-    "email_escola": "monteirolobato@edu.exemplo.com",
-    "segmento_escola": ["fundamental", "medio"]
+    "id_escola": "uuid-nova-escola"
   }
 }
 ```
 
-### Respostas de Erro
+#### Respostas de Erro
 
 **Código**: `400 BAD REQUEST`
 
 ```json
 {
   "status": "erro",
-  "mensagem": "Nome, endereço, email e segmento são obrigatórios"
+  "mensagem": "Nome, endereço e email são obrigatórios"
 }
 ```
 
@@ -145,48 +155,49 @@ Adiciona uma nova escola ao sistema.
 }
 ```
 
----
-
-## Atualizar Escola
-
-Atualiza os dados de uma escola existente.
-
-**URL**: `/escolas/:id_escola`
-
-**Método**: `PUT`
-
-**Autenticação**: Requerida (Admin, Gestor Escolar, Nutricionista)
-
-### Corpo da Requisição
+**Código**: `401 UNAUTHORIZED`
 
 ```json
 {
-  "nome_escola": "Escola Municipal Monteiro Lobato - Unidade II",
-  "endereco_escola": "Rua das Letras, 790",
-  "email_escola": "monteirolobato.u2@edu.exemplo.com",
-  "segmento_escola": ["fundamental", "medio", "eja"]
+  "status": "erro",
+  "mensagem": "Não autorizado"
 }
 ```
 
-### Resposta de Sucesso
+---
+
+### Atualizar Escola
+
+Atualiza os dados de uma escola existente.
+
+**URL**: `/escolas/:id`
+
+**Método**: `PUT`
+
+**Autenticação**: Sim (Admin, Escola, Nutricionista)
+
+#### Corpo da Requisição
+
+```json
+{
+  "nome_escola": "Escola Municipal João da Silva - Atualizada",
+  "endereco_escola": "Rua das Flores, 123 - Novo Endereço",
+  "email_escola": "novo.email@edu.exemplo.com"
+}
+```
+
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Escola atualizada com sucesso",
-  "dados": {
-    "id_escola": "uuid-escola",
-    "nome_escola": "Escola Municipal Monteiro Lobato - Unidade II",
-    "endereco_escola": "Rua das Letras, 790",
-    "email_escola": "monteirolobato.u2@edu.exemplo.com",
-    "segmento_escola": ["fundamental", "medio", "eja"]
-  }
+  "mensagem": "Escola atualizada com sucesso"
 }
 ```
 
-### Respostas de Erro
+#### Respostas de Erro
 
 **Código**: `404 NOT FOUND`
 
@@ -197,19 +208,28 @@ Atualiza os dados de uma escola existente.
 }
 ```
 
+**Código**: `401 UNAUTHORIZED`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Não autorizado"
+}
+```
+
 ---
 
-## Excluir Escola
+### Excluir Escola
 
 Remove uma escola do sistema.
 
-**URL**: `/escolas/:id_escola`
+**URL**: `/escolas/:id`
 
 **Método**: `DELETE`
 
-**Autenticação**: Requerida (Admin, Nutricionista)
+**Autenticação**: Sim (Admin, Nutricionista)
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `200 OK`
 
@@ -220,7 +240,7 @@ Remove uma escola do sistema.
 }
 ```
 
-### Respostas de Erro
+#### Respostas de Erro
 
 **Código**: `404 NOT FOUND`
 
@@ -231,96 +251,211 @@ Remove uma escola do sistema.
 }
 ```
 
+**Código**: `401 UNAUTHORIZED`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Não autorizado"
+}
+```
+
 ---
 
-## Importar Escolas
+## 🏷️ Gestão de Segmentos
 
-Importa múltiplas escolas a partir de um arquivo ou array JSON.
+### Adicionar Segmento à Escola
 
-**URL**: `/escolas/importar`
+Associa um segmento a uma escola.
+
+**URL**: `/escolas/:id/segmentos`
 
 **Método**: `POST`
 
-**Autenticação**: Requerida (Admin)
+**Autenticação**: Sim (Admin, Nutricionista)
 
-### Corpo da Requisição
+#### Corpo da Requisição
 
 ```json
-[
-  {
-    "nome_escola": "Escola Municipal Paulo Freire",
-    "endereco_escola": "Rua da Educação, 100",
-    "email_escola": "paulofreire@edu.exemplo.com",
-    "segmento_escola": ["fundamental"]
-  },
-  {
-    "nome_escola": "Escola Municipal Anísio Teixeira",
-    "endereco_escola": "Av. da Pedagogia, 200",
-    "email_escola": "anisioteixeira@edu.exemplo.com",
-    "segmento_escola": ["fundamental", "medio"]
-  }
-]
+{
+  "id_segmento": "uuid-segmento-1"
+}
 ```
 
-### Resposta de Sucesso
+#### Resposta de Sucesso
 
 **Código**: `201 CREATED`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Importação concluída: 2 escolas importadas com sucesso, 0 falhas",
-  "dados": {
-    "total": 2,
-    "sucesso": 2,
-    "falhas": 0,
-    "resultados": [
-      {
-        "indice": 0,
-        "id": "uuid-escola-1",
-        "nome": "Escola Municipal Paulo Freire"
-      },
-      {
-        "indice": 1,
-        "id": "uuid-escola-2",
-        "nome": "Escola Municipal Anísio Teixeira"
-      }
-    ],
-    "erros": []
-  }
+  "mensagem": "Segmento adicionado à escola com sucesso"
 }
 ```
 
-### Respostas de Erro
+#### Respostas de Erro
 
 **Código**: `400 BAD REQUEST`
 
 ```json
 {
   "status": "erro",
-  "mensagem": "Formato inválido. Esperado um array de escolas."
+  "mensagem": "Escola já possui este segmento"
 }
 ```
+
+**Código**: `404 NOT FOUND`
 
 ```json
 {
   "status": "erro",
-  "mensagem": "Importação concluída: 1 escolas importadas com sucesso, 1 falhas",
+  "mensagem": "Escola ou segmento não encontrado"
+}
+```
+
+---
+
+### Remover Segmento da Escola
+
+Remove a associação de um segmento com uma escola.
+
+**URL**: `/escolas/:id/segmentos/:id_segmento`
+
+**Método**: `DELETE`
+
+**Autenticação**: Sim (Admin, Nutricionista)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Segmento removido da escola com sucesso"
+}
+```
+
+#### Respostas de Erro
+
+**Código**: `404 NOT FOUND`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Associação não encontrada"
+}
+```
+
+---
+
+### Listar Segmentos da Escola
+
+Retorna todos os segmentos associados a uma escola.
+
+**URL**: `/escolas/:id/segmentos`
+
+**Método**: `GET`
+
+**Autenticação**: Não requerida
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Segmentos da escola listados com sucesso",
+  "dados": [
+    {
+      "id_segmento": "uuid-segmento-1",
+      "nome_segmento": "Ensino Fundamental",
+      "descricao_segmento": "1º ao 9º ano",
+      "data_associacao": "2023-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## 📊 Métricas e Dashboard
+
+### Obter Métricas da Escola
+
+Retorna métricas estatísticas de uma escola.
+
+**URL**: `/escolas/:id/metricas`
+
+**Método**: `GET`
+
+**Autenticação**: Sim (Admin, Escola, Nutricionista)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Métricas da escola obtidas com sucesso",
   "dados": {
-    "total": 2,
-    "sucesso": 1,
-    "falhas": 1,
-    "resultados": [
+    "total_itens_estoque": 45,
+    "itens_abaixo_ideal": 8,
+    "itens_proximos_validade": 3,
+    "total_pedidos_mes": 12,
+    "valor_total_estoque": 15420.50,
+    "segmentos_ativos": 2,
+    "ultima_atualizacao": "2023-06-20T14:15:00Z"
+  }
+}
+```
+
+---
+
+### Obter Dashboard da Escola
+
+Retorna dados consolidados para dashboard da escola.
+
+**URL**: `/escolas/:id/dashboard`
+
+**Método**: `GET`
+
+**Autenticação**: Sim (Admin, Escola, Nutricionista)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Dashboard da escola obtido com sucesso",
+  "dados": {
+    "resumo_estoque": {
+      "total_itens": 45,
+      "abaixo_ideal": 8,
+      "proximos_validade": 3,
+      "valor_total": 15420.50
+    },
+    "resumo_pedidos": {
+      "pendentes": 2,
+      "em_andamento": 3,
+      "concluidos": 7
+    },
+    "segmentos": [
       {
-        "indice": 0,
-        "id": "uuid-escola-1",
-        "nome": "Escola Municipal Paulo Freire"
+        "id_segmento": "uuid-segmento-1",
+        "nome_segmento": "Ensino Fundamental",
+        "total_itens": 30
       }
     ],
-    "erros": [
+    "alertas": [
       {
-        "indice": 1,
-        "erro": "Já existe uma escola com este email"
+        "tipo": "estoque_baixo",
+        "mensagem": "8 itens estão abaixo do ideal",
+        "severidade": "warning"
       }
     ]
   }
@@ -329,52 +464,138 @@ Importa múltiplas escolas a partir de um arquivo ou array JSON.
 
 ---
 
-## Listar Escolas com Segmentos
+## 📦 Importação em Massa
 
-Retorna todas as escolas com seus respectivos segmentos organizados de forma clara.
+### Importar Escolas
 
-**URL**: `/escolas/segmentos`
+Permite importar múltiplas escolas de uma vez.
 
-**Método**: `GET`
+**URL**: `/escolas/importar`
 
-**Autenticação**: Opcional
+**Método**: `POST`
 
-### Resposta de Sucesso
+**Autenticação**: Sim (Admin)
 
-**Código**: `200 OK`
+#### Corpo da Requisição
 
 ```json
 {
-  "status": "sucesso",
-  "mensagem": "Escolas com segmentos listadas com sucesso",
-  "dados": [
+  "escolas": [
     {
-      "id_escola": "uuid-escola-1",
-      "nome_escola": "Escola Municipal João da Silva",
-      "endereco_escola": "Rua das Flores, 123",
-      "email_escola": "joaodasilva@edu.exemplo.com",
-      "segmentos": ["fundamental", "medio"]
+      "nome_escola": "Escola Municipal 1",
+      "endereco_escola": "Endereço 1",
+      "email_escola": "escola1@edu.exemplo.com"
     },
     {
-      "id_escola": "uuid-escola-2", 
-      "nome_escola": "CEFET Campus Central",
-      "endereco_escola": "Av. Tecnológica, 789",
-      "email_escola": "cefet@edu.exemplo.com",
-      "segmentos": ["medio", "proeja"]
-    },
-    {
-      "id_escola": "uuid-escola-3",
-      "nome_escola": "Creche Municipal Pequeno Príncipe", 
-      "endereco_escola": "Av. dos Sonhos, 456",
-      "email_escola": "pequenoprincipe@edu.exemplo.com",
-      "segmentos": ["infantil"]
+      "nome_escola": "Escola Municipal 2",
+      "endereco_escola": "Endereço 2",
+      "email_escola": "escola2@edu.exemplo.com"
     }
   ]
 }
 ```
 
-## Notas de Implementação
+#### Resposta de Sucesso
 
-- O campo `segmento_escola` é um array de strings que pode conter múltiplos segmentos
-- Ao excluir uma escola, todos os dados relacionados (estoque, pedidos, etc.) serão mantidos para fins de histórico
-- A importação em lote é processada em uma transação atômica
+**Código**: `201 CREATED`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Escolas importadas com sucesso",
+  "dados": {
+    "total_processadas": 2,
+    "total_criadas": 2,
+    "total_erros": 0,
+    "erros": []
+  }
+}
+```
+
+#### Resposta com Erros Parciais
+
+**Código**: `207 MULTI-STATUS`
+
+```json
+{
+  "status": "parcial",
+  "mensagem": "Importação concluída com alguns erros",
+  "dados": {
+    "total_processadas": 2,
+    "total_criadas": 1,
+    "total_erros": 1,
+    "erros": [
+      {
+        "indice": 1,
+        "erro": "Email já cadastrado no sistema"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 🔒 Permissões
+
+### Níveis de Acesso
+
+| Endpoint | Método | Admin | Nutricionista | Gestor Escolar |
+|----------|--------|:-----:|:-------------:|:--------------:|
+| `/escolas` | GET | ✅ | ✅ | ✅ |
+| `/escolas/:id` | GET | ✅ | ✅ | ✅ |
+| `/escolas` | POST | ✅ | ✅ | ❌ |
+| `/escolas/:id` | PUT | ✅ | ✅ | ✅ (própria escola) |
+| `/escolas/:id` | DELETE | ✅ | ✅ | ❌ |
+| `/escolas/:id/segmentos` | GET | ✅ | ✅ | ✅ |
+| `/escolas/:id/segmentos` | POST | ✅ | ✅ | ❌ |
+| `/escolas/:id/segmentos/:id_segmento` | DELETE | ✅ | ✅ | ❌ |
+| `/escolas/:id/metricas` | GET | ✅ | ✅ | ✅ (própria escola) |
+| `/escolas/:id/dashboard` | GET | ✅ | ✅ | ✅ (própria escola) |
+| `/escolas/importar` | POST | ✅ | ❌ | ❌ |
+
+> **Legenda:**
+> - ✅ = Acesso permitido
+> - ❌ = Acesso negado
+> - "Própria escola" = Apenas acesso aos recursos da própria escola
+
+---
+
+## 📝 Exemplos de Uso
+
+### 1. Buscar Escolas com Filtros
+
+```bash
+GET /escolas?nome=Municipal&com_segmentos=true
+```
+
+### 2. Adicionar Segmento a uma Escola
+
+```bash
+POST /escolas/uuid-escola-1/segmentos
+Content-Type: application/json
+Authorization: Bearer token
+
+{
+  "id_segmento": "uuid-segmento-fundamental"
+}
+```
+
+### 3. Obter Dashboard de uma Escola
+
+```bash
+GET /escolas/uuid-escola-1/dashboard
+Authorization: Bearer token
+```
+
+---
+
+## 🚨 Notas Importantes
+
+1. **Validações**: Todos os campos obrigatórios devem ser fornecidos
+2. **Email Único**: O email da escola deve ser único no sistema
+3. **Segmentos**: Uma escola pode ter múltiplos segmentos
+4. **Autorização**: Gestores escolares só podem acessar dados da própria escola
+5. **Auditoria**: Todas as operações são logadas para auditoria
+
+---

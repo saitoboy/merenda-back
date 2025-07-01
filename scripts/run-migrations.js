@@ -101,6 +101,19 @@ class MigrationRunner {
                         AND indexname NOT LIKE '%_pkey'
                     `);
                     return parseInt(hasIndexes.rows[0].count) < 5;
+
+                case '009_insert_test_period.sql':
+                    const hasTestPeriod = await this.pool.query(
+                        'SELECT COUNT(*) FROM periodo_lancamento WHERE mes = 6 AND ano = 2025'
+                    );
+                    return parseInt(hasTestPeriod.rows[0].count) === 0;
+
+                case '010_cleanup_estoque_table.sql':
+                    const hasOldColumn = await this.pool.query(`
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'estoque' AND column_name = 'segmento_estoque'
+                    `);
+                    return parseInt(hasOldColumn.rows[0].count) > 0;
                 
                 default:
                     return true; // Se não souber, tenta executar
@@ -114,7 +127,7 @@ class MigrationRunner {
         console.log('🚀 NORMALIZAÇÃO DO BANCO DE DADOS - MERENDA SMART FLOW');
         console.log('='.repeat(60));
         console.log('🎯 Objetivo: Normalizar tabelas escola, estoque e segmentos');
-        console.log('📦 Total de migrations: 8');
+        console.log('📦 Total de migrations: 11');
         console.log('');
 
         try {
@@ -241,6 +254,8 @@ class MigrationRunner {
             console.log('   • Colunas normalizadas na tabela estoque');
             console.log('   • Foreign Keys e constraints de integridade');
             console.log('   • Índices para otimização de performance');
+            console.log('   • Período de teste junho/2025 inserido');
+            console.log('   • Limpeza de colunas obsoletas (segmento_estoque)');
         } else {
             console.log('⚠️  Algumas migrations falharam.');
             console.log('💡 Verifique os erros acima e execute novamente se necessário.');

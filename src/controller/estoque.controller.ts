@@ -1,12 +1,30 @@
 import { Request, Response } from 'express';
-import * as EstoqueService from '../services/estoque.service';
+import { 
+  buscarEstoquePorEscola,
+  buscarItensAbaixoIdeal,
+  buscarItensProximosValidade,
+  criarItemEstoque,
+  atualizarQuantidade as atualizarQuantidadeService,
+  atualizarNumeroIdeal as atualizarNumeroIdealService,
+  removerItemEstoque,
+  obterMetricasEstoque,
+  definirIdeaisEmLote
+} from '../services/estoque.service';
+import { buscarSegmentosPorEscola } from '../model/escola-segmento.model';
 
 export const listarEstoquePorEscola = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola } = req.params;
-    const { segmento } = req.query;
+    const { idSegmento, idPeriodo, idItem, quantidadeMinima } = req.query;
     
-    const estoque = await EstoqueService.buscarEstoquePorEscola(id_escola, segmento as string);
+    const filtros = {
+      ...(idSegmento && { idSegmento: idSegmento as string }),
+      ...(idPeriodo && { idPeriodo: idPeriodo as string }),
+      ...(idItem && { idItem: idItem as string }),
+      ...(quantidadeMinima && { quantidadeMinima: parseInt(quantidadeMinima as string) })
+    };
+    
+    const estoque = await buscarEstoquePorEscola(id_escola, filtros);
     
     res.status(200).json({
       status: 'sucesso',
@@ -33,7 +51,7 @@ export const listarItensAbaixoIdeal = async (req: Request, res: Response): Promi
   try {
     const { id_escola } = req.params;
     
-    const itensAbaixoIdeal = await EstoqueService.buscarItensAbaixoIdeal(id_escola);
+    const itensAbaixoIdeal = await buscarItensAbaixoIdeal(id_escola);
     
     res.status(200).json({
       status: 'sucesso',
@@ -57,10 +75,10 @@ export const listarItensAbaixoIdeal = async (req: Request, res: Response): Promi
 
 export const atualizarQuantidade = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id_escola, id_item } = req.params;
-    const { quantidade_item, segmento } = req.body;
+    const { id_estoque } = req.params;
+    const { quantidade } = req.body;
     
-    if (!quantidade_item && quantidade_item !== 0) {
+    if (!quantidade && quantidade !== 0) {
       res.status(400).json({
         status: 'erro',
         mensagem: 'Quantidade é obrigatória'
@@ -68,7 +86,7 @@ export const atualizarQuantidade = async (req: Request, res: Response): Promise<
       return;
     }
     
-    const resultado = await EstoqueService.atualizarQuantidade(id_escola, id_item, quantidade_item, segmento || 'escola');
+    const resultado = await atualizarQuantidadeService(id_estoque, quantidade);
     
     res.status(200).json({
       status: 'sucesso',
@@ -93,8 +111,8 @@ export const atualizarQuantidade = async (req: Request, res: Response): Promise<
 
 export const atualizarNumeroIdeal = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id_escola, id_item } = req.params;
-    const { numero_ideal, segmento } = req.body;
+    const { id_estoque } = req.params;
+    const { numero_ideal } = req.body;
     
     if (!numero_ideal && numero_ideal !== 0) {
       res.status(400).json({
@@ -104,7 +122,7 @@ export const atualizarNumeroIdeal = async (req: Request, res: Response): Promise
       return;
     }
     
-    const resultado = await EstoqueService.atualizarNumeroIdeal(id_escola, id_item, numero_ideal, segmento || 'escola');
+    const resultado = await atualizarNumeroIdealService(id_estoque, numero_ideal);
     
     res.status(200).json({
       status: 'sucesso',
@@ -137,9 +155,10 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
         status: 'erro',
         mensagem: 'Escola, item, quantidade e número ideal são obrigatórios'
       });
+      return;
     }
     
-    const resultado = await EstoqueService.adicionarItemAoEstoque(dadosEstoque);
+    const resultado = await criarItemEstoque(dadosEstoque);
     
     res.status(201).json({
       status: 'sucesso',
@@ -152,6 +171,7 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -163,14 +183,9 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
 
 export const removerItemDoEstoque = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id_escola, id_item } = req.params;
-    const { segmento } = req.query;
+    const { id_estoque } = req.params;
     
-    const resultado = await EstoqueService.removerItemDoEstoque(
-      id_escola, 
-      id_item, 
-      typeof segmento === 'string' ? segmento : 'escola'
-    );
+    const resultado = await removerItemEstoque(id_estoque);
     
     res.status(200).json({
       status: 'sucesso',
@@ -197,7 +212,7 @@ export const obterMetricas = async (req: Request, res: Response): Promise<void> 
   try {
     const { id_escola } = req.params;
     
-    const metricas = await EstoqueService.obterMetricas(id_escola);
+    const metricas = await obterMetricasEstoque(id_escola);
     
     res.status(200).json({
       status: 'sucesso',
@@ -210,6 +225,7 @@ export const obterMetricas = async (req: Request, res: Response): Promise<void> 
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
     res.status(500).json({
@@ -222,42 +238,33 @@ export const obterMetricas = async (req: Request, res: Response): Promise<void> 
 // Definir valores ideais em lote
 export const definirValoresIdeaisEmLote = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { ideais } = req.body;
+    const { id_escola, id_periodo, ideais } = req.body;
     
     // Validação básica
-    if (!ideais || !Array.isArray(ideais) || ideais.length === 0) {
+    if (!id_escola || !id_periodo || !ideais || !Array.isArray(ideais) || ideais.length === 0) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Formato inválido. Esperado um array de itens com id_escola, id_item e numero_ideal'
+        mensagem: 'id_escola, id_periodo e array de ideais são obrigatórios'
       });
       return;
     }
     
     // Verificação de cada item do array
     for (const item of ideais) {
-      if (!item.id_escola || !item.id_item || (item.numero_ideal === undefined)) {
+      if (!item.idItem || !item.idSegmento || (item.numeroIdeal === undefined)) {
         res.status(400).json({
           status: 'erro',
-          mensagem: 'Cada item deve conter id_escola, id_item e numero_ideal'
-        });
-        return;
-      }
-      
-      // Segmento é opcional, mas se estiver presente não pode ser vazio
-      if (item.segmento !== undefined && item.segmento.trim() === '') {
-        res.status(400).json({
-          status: 'erro',
-          mensagem: 'Segmento não pode ser uma string vazia'
+          mensagem: 'Cada item deve conter idItem, idSegmento e numeroIdeal'
         });
         return;
       }
     }
     
-    const resultado = await EstoqueService.definirValoresIdeaisEmLote(ideais);
+    const resultado = await definirIdeaisEmLote(id_escola, id_periodo, ideais);
     
     res.status(200).json({
       status: 'sucesso',
-      mensagem: 'Valores ideais definidos com sucesso',
+      mensagem: 'Valores ideais definidos em lote com sucesso',
       dados: resultado
     });
   } catch (error) {
@@ -280,38 +287,29 @@ export const definirValoresIdeaisEmLote = async (req: Request, res: Response): P
 export const definirIdeaisPorEscola = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_escola } = req.params;
-    const { itens_ideais } = req.body;
+    const { id_periodo, itens_ideais } = req.body;
     
     // Validação básica
-    if (!itens_ideais || !Array.isArray(itens_ideais) || itens_ideais.length === 0) {
+    if (!id_periodo || !itens_ideais || !Array.isArray(itens_ideais) || itens_ideais.length === 0) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Formato inválido. Esperado um array de itens com id_item e numero_ideal'
+        mensagem: 'id_periodo e array de itens_ideais são obrigatórios'
       });
       return;
     }
     
     // Verificação de cada item do array
     for (const item of itens_ideais) {
-      if (!item.id_item || (item.numero_ideal === undefined)) {
+      if (!item.idItem || !item.idSegmento || (item.numeroIdeal === undefined)) {
         res.status(400).json({
           status: 'erro',
-          mensagem: 'Cada item deve conter id_item e numero_ideal'
-        });
-        return;
-      }
-      
-      // Segmento é opcional, mas se estiver presente não pode ser vazio
-      if (item.segmento !== undefined && item.segmento.trim() === '') {
-        res.status(400).json({
-          status: 'erro',
-          mensagem: 'Segmento não pode ser uma string vazia'
+          mensagem: 'Cada item deve conter idItem, idSegmento e numeroIdeal'
         });
         return;
       }
     }
     
-    const resultado = await EstoqueService.definirIdeaisPorEscola(id_escola, itens_ideais);
+    const resultado = await definirIdeaisEmLote(id_escola, id_periodo, itens_ideais);
     
     res.status(200).json({
       status: 'sucesso',
@@ -339,7 +337,7 @@ export const listarItensProximosValidade = async (req: Request, res: Response): 
     const { id_escola, dias } = req.params;
     const diasNumero = parseInt(dias) || 7; // Default 7 dias se não especificado
     
-    const itensProximos = await EstoqueService.buscarItensProximosValidade(id_escola, diasNumero);
+    const itensProximos = await buscarItensProximosValidade(id_escola, diasNumero);
     
     res.status(200).json({
       status: 'sucesso',
@@ -366,7 +364,7 @@ export const listarSegmentosPorEscola = async (req: Request, res: Response): Pro
   try {
     const { id_escola } = req.params;
     
-    const segmentos = await EstoqueService.buscarSegmentosPorEscola(id_escola);
+    const segmentos = await buscarSegmentosPorEscola(id_escola);
     
     res.status(200).json({
       status: 'sucesso',

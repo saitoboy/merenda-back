@@ -1,77 +1,103 @@
-# Documentação da API Merenda Smart Flow
+# 📖 Documentação da API Merenda Smart Flow
 
-## Visão Geral
+## 🎉 Sistema Completamente Refatorado e Atualizado
 
-Esta documentação contém todas as rotas disponíveis na API do sistema Merenda Smart Flow, incluindo exemplos de requisição e resposta em JSON.
+> **✅ REFATORAÇÃO CONCLUÍDA**: O sistema foi completamente modernizado com modelo de dados normalizado
+> 
+> - **Banco normalizado**: Segmentos e períodos como entidades próprias
+> - **Services refatorados**: Integração completa com o novo modelo
+> - **Controllers atualizados**: APIs modernas para gestão completa
+> - **Novas funcionalidades**: Gestão de segmentos, períodos, métricas e dashboard
+> 
+> **Sistema 100% funcional** e pronto para uso em produção!
 
-## Índice
+## 🚀 Visão Geral
 
-1. [Autenticação](./autenticacao.md)
-   - Login
-   - Registro
-   - Verificação de Token
+Esta documentação contém todas as rotas disponíveis na API do sistema Merenda Smart Flow, incluindo exemplos de requisição e resposta em JSON. O sistema utiliza um modelo de dados normalizado com relacionamentos adequados para máxima eficiência e escalabilidade.
 
-2. [Escolas](./escolas.md)
-   - Listar Escolas
-   - Buscar Escola
-   - Criar Escola
-   - Atualizar Escola
-   - Excluir Escola
-   - Importar Escolas
+## 📚 Índice da Documentação
 
-3. [Estoque](./estoque.md)
-   - Listar Estoque por Escola
-   - Itens Abaixo do Ideal
-   - Métricas de Estoque
-   - Atualizar Quantidade
-   - Atualizar Número Ideal
-   - Definir Valores Ideais em Lote
-   - Adicionar Item ao Estoque
-   - Remover Item do Estoque
+### � Autenticação e Segurança
 
-4. [Fornecedores](./fornecedores.md)
-   - Listar Fornecedores
-   - Buscar Fornecedor
-   - Criar Fornecedor
-   - Atualizar Fornecedor
-   - Excluir Fornecedor
-   - Importar Fornecedores
+1. **[Autenticação](./autenticacao.md)**
+   - Login e Registro
+   - Tokens JWT
+   - Verificação de Permissões
 
-5. [Itens](./itens.md)
-   - Listar Itens
-   - Buscar Item
-   - Buscar Itens por Fornecedor
-   - Criar Item
-   - Atualizar Item
-   - Excluir Item
-   - Importar Itens
-   - Itens Próximos da Validade
+### 🏫 Gestão Educacional
 
-6. [Pedidos](./pedidos.md)
-   - Listar Pedidos
-   - Buscar Pedido
-   - Buscar Pedidos por Escola
-   - Criar Pedido
-   - Atualizar Pedido
-   - Excluir Pedido
-   - Pedidos por Período
-   - Métricas de Pedidos
+2. **[Escolas](./escolas.md)**
+   - CRUD completo de escolas
+   - Gestão de segmentos por escola
+   - Métricas e dashboard
+   - Importação em massa
 
-7. [Usuários](./usuarios.md)
-   - Listar Usuários
-   - Buscar Usuário
-   - Buscar Usuários por Escola
-   - Criar Usuário
-   - Atualizar Usuário
-   - Excluir Usuário
+3. **[Segmentos](./segmentos.md)** ⭐ *NOVO*
+   - Gestão de segmentos educacionais
+   - Relacionamentos com escolas
+   - Estatísticas por segmento
+   - Importação de segmentos
 
-## Convenções
+4. **[Períodos de Lançamento](./periodos.md)** ⭐ *NOVO*
+   - Controle de períodos letivos
+   - Ativação/desativação de períodos
+   - Estatísticas temporais
+   - Busca por intervalos
 
-### Formato de Resposta
+### 📦 Gestão de Estoque
+
+5. **[Estoque](./estoque.md)**
+   - Modelo normalizado (escola + segmento + período)
+   - Consultas avançadas por segmento/período
+   - Gestão de valores ideais
+   - Alertas de estoque baixo e validade
+
+6. **[Fornecedores](./fornecedores.md)**
+   - CRUD completo de fornecedores
+   - Autenticação de fornecedores
+   - Importação em massa
+
+7. **[Itens](./itens.md)**
+   - Gestão de produtos/alimentos
+   - Relacionamento com fornecedores
+   - Estatísticas de preços
+   - Controle de validade
+
+8. **[Pedidos](./pedidos.md)**
+   - Gestão de pedidos por escola
+   - Controle de status
+   - Relatórios por período
+   - Métricas de pedidos
+
+9. **[Usuários](./usuarios.md)**
+   - Gestão de usuários do sistema
+   - Controle de permissões por tipo
+   - Perfis e autorizações
+
+### �️ Ferramentas e Utilitários
+
+10. **[Importação de Dados](./importacao.md)**
+    - Importação em massa de dados
+    - Validações e tratamento de erros
+    - Formatos aceitos
+
+11. **[Rotas de Teste](./rotas_teste.md)**
+    - Endpoints para desenvolvimento
+    - Health checks
+    - Simulação de erros
+
+12. **[Solução de Problemas](./troubleshooting.md)**
+    - Erros comuns e soluções
+    - Códigos de status HTTP
+    - Dicas de debugging
+
+## 🔧 Convenções da API
+
+### Formato de Resposta Padrão
 
 Todas as respostas da API seguem o seguinte formato:
 
-**Sucesso:**
+**Resposta de Sucesso:**
 
 ```json
 {
@@ -81,7 +107,7 @@ Todas as respostas da API seguem o seguinte formato:
 }
 ```
 
-**Erro:**
+**Resposta de Erro:**
 
 ```json
 {
@@ -90,49 +116,65 @@ Todas as respostas da API seguem o seguinte formato:
 }
 ```
 
-### Autenticação
+### Autenticação JWT
 
 A maioria das rotas requer autenticação por token JWT. O token deve ser enviado no cabeçalho da requisição:
 
-```
+```bash
 Authorization: Bearer seu-token-jwt
 ```
 
-### Níveis de Acesso
+### Níveis de Permissão
 
 O sistema possui diferentes níveis de acesso:
 
-- **Admin**: Acesso total ao sistema
-- **Nutricionista**: Gerencia cardápio, define valores ideais, visualiza escolas
-- **Gestor Escolar**: Gerencia estoque e pedidos de sua escola
-- **Fornecedor**: Visualiza pedidos relacionados aos seus produtos
+- **🔑 Admin**: Acesso total ao sistema
+- **🍎 Nutricionista**: Gerencia cardápio, define valores ideais, visualiza escolas
+- **🏫 Gestor Escolar**: Gerencia estoque e pedidos de sua escola
+- **🚚 Fornecedor**: Visualiza pedidos relacionados aos seus produtos
+
+- **🔑 Admin**: Acesso total ao sistema
+- **🍎 Nutricionista**: Gerencia cardápio, define valores ideais, visualiza escolas
+- **🏫 Gestor Escolar**: Gerencia estoque e pedidos de sua escola
+- **🚚 Fornecedor**: Visualiza pedidos relacionados aos seus produtos
 
 ### Códigos de Status HTTP
 
 - **200**: Sucesso (GET, PUT)
 - **201**: Criado com sucesso (POST)
+- **207**: Multi-status (importação com erros parciais)
 - **400**: Erro no cliente (dados inválidos)
 - **401**: Não autenticado (token ausente ou inválido)
 - **403**: Não autorizado (sem permissão)
 - **404**: Recurso não encontrado
+- **409**: Conflito (dados duplicados)
 - **500**: Erro interno do servidor
 
-## Informações Adicionais
+## 🔗 Links Úteis
 
-Para instruções sobre como executar e configurar o servidor da API, consulte o [README principal](../README.md) do projeto.
+### Configuração e Setup
+- [README Principal](../README.md) - Como executar o projeto
+- [Guia de Migração](./guia-migracao.md) - Migração de banco de dados
 
-## Importação em Massa
+### Recursos Avançados
+- [Importação de Dados](./importacao.md) - Importação em massa
+- [Gestão de Valores Ideais](../gestao_valores_ideais.md) - Configuração de estoques
+- [Rotas de Teste](./rotas_teste.md) - Desenvolvimento e debugging
 
-Para informações detalhadas sobre como importar dados em massa (escolas, fornecedores, itens e valores ideais), consulte a [Documentação de Importação](./importacao.md).
+### Suporte
+- [Solução de Problemas](./troubleshooting.md) - Erros comuns e soluções
+- [Database Migration](../database-migration.md) - Detalhes técnicos das migrations
 
-## Gestão de Valores Ideais
+## 🎯 Características Principais
 
-Para entender o conceito e as melhores práticas para a gestão de valores ideais no sistema, consulte a [Documentação de Gestão de Valores Ideais](../gestao_valores_ideais.md).
+✅ **Modelo Normalizado**: Relacionamentos adequados entre entidades  
+✅ **Segmentação Avançada**: Gestão por segmentos educacionais  
+✅ **Controle Temporal**: Períodos de lançamento configuráveis  
+✅ **Importação em Massa**: Suporte para grandes volumes de dados  
+✅ **Métricas e Dashboard**: Visão consolidada do sistema  
+✅ **Controle de Permissões**: Acesso granular por tipo de usuário  
+✅ **Auditoria Completa**: Logs detalhados de todas as operações  
 
-## Rotas de Teste e Desenvolvimento
+---
 
-Para informações sobre rotas úteis durante o desenvolvimento e testes do sistema, consulte a [Documentação de Rotas de Teste](./rotas_teste.md).
-
-## Solução de Problemas
-
-Encontrou algum problema ao utilizar a API? Confira nossa [Documentação de Troubleshooting](./troubleshooting.md) com erros comuns e suas soluções.
+**📧 Dúvidas ou sugestões?** Consulte a [documentação de troubleshooting](./troubleshooting.md) ou entre em contato com a equipe de desenvolvimento.

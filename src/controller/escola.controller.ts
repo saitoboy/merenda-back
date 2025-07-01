@@ -3,29 +3,35 @@ import * as EscolaService from '../services/escola.service';
 
 export const listarEscolas = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { segmento } = req.query;
+    const { segmento, nome, email, endereco, com_segmentos } = req.query;
     
-    // Se tiver segmento na query, filtra por segmento; caso contrário, lista todas
     let escolas;
-    if (segmento && typeof segmento === 'string') {
-      escolas = await EscolaService.buscarEscolasPorSegmento(segmento);
+    
+    // Se solicitado escolas com segmentos
+    if (com_segmentos === 'true') {
+      escolas = await EscolaService.buscarEscolasComSegmentos();
+    }
+    // Se tiver filtros, usar busca com filtros
+    else if (segmento || nome || email || endereco) {
+      const filtros = {
+        ...(segmento && typeof segmento === 'string' && { id_segmento: segmento }),
+        ...(nome && typeof nome === 'string' && { nome_escola: nome }),
+        ...(email && typeof email === 'string' && { email_escola: email }),
+        ...(endereco && typeof endereco === 'string' && { endereco_escola: endereco })
+      };
       
-      if (escolas.length === 0) {
-        res.status(200).json({
-          status: 'sucesso',
-          mensagem: 'Nenhuma escola encontrada para o segmento especificado',
-          dados: []
-        });
-        return;
-      }
-    } else {
+      escolas = await EscolaService.buscarEscolasComFiltros(filtros);
+    }
+    // Caso contrário, lista todas
+    else {
       escolas = await EscolaService.buscarTodasEscolas();
     }
     
     res.status(200).json({
       status: 'sucesso',
       mensagem: 'Escolas listadas com sucesso',
-      dados: escolas
+      dados: escolas,
+      total: escolas.length
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -33,12 +39,12 @@ export const listarEscolas = async (req: Request, res: Response): Promise<void> 
         status: 'erro',
         mensagem: error.message
       });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
     }
-    
-    res.status(500).json({
-      status: 'erro',
-      mensagem: 'Erro interno do servidor'
-    });
   }
 };
 
@@ -71,30 +77,25 @@ export const buscarEscolaPorId = async (req: Request, res: Response): Promise<vo
 export const criarEscola = async (req: Request, res: Response): Promise<void> => {
   try {
     const dadosEscola = req.body;
-      // Validações básicas
-    if (!dadosEscola.nome_escola || !dadosEscola.endereco_escola || !dadosEscola.email_escola || !dadosEscola.segmento_escola) {
+    
+    // Validações básicas
+    if (!dadosEscola.nome_escola || !dadosEscola.endereco_escola || !dadosEscola.email_escola) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Nome, endereço, email e segmentos são obrigatórios'
+        mensagem: 'Nome, endereço e email são obrigatórios'
       });
       return;
     }
     
-    // Validar se segmento_escola é um array
-    if (!Array.isArray(dadosEscola.segmento_escola)) {
-      res.status(400).json({
-        status: 'erro',
-        mensagem: 'O campo segmento_escola deve ser um array de strings'
-      });
-      return;
-    }
+    // Remover campo obsoleto se presente
+    const { segmento_escola, ...dadosLimpos } = dadosEscola;
     
-    const resultado = await EscolaService.criarEscola(dadosEscola);
+    const resultado = await EscolaService.criarEscola(dadosLimpos);
     
     res.status(201).json({
       status: 'sucesso',
-      mensagem: 'Escola criada com sucesso',
-      dados: resultado
+      mensagem: resultado.mensagem,
+      dados: { id: resultado.id }
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -102,12 +103,12 @@ export const criarEscola = async (req: Request, res: Response): Promise<void> =>
         status: 'erro',
         mensagem: error.message
       });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
     }
-    
-    res.status(500).json({
-      status: 'erro',
-      mensagem: 'Erro interno do servidor'
-    });
   }
 };
 
@@ -192,63 +193,29 @@ export const buscarEscolasPorSegmento = async (req: Request, res: Response): Pro
 
 export const importarEscolasMassa = async (req: Request, res: Response): Promise<void> => {
   try {
-    const escolas = req.body;
+    const { escolas } = req.body;
     
-    // Validar se o body é um array
-    if (!Array.isArray(escolas)) {
+    // Validar se o body contém o array de escolas
+    if (!Array.isArray(escolas) || escolas.length === 0) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'O corpo da requisição deve ser um array de escolas'
+        mensagem: 'Array de escolas é obrigatório e não pode estar vazio'
       });
       return;
     }
     
-    // Validar cada escola no array
-    for (const escola of escolas) {
-      if (!escola.nome_escola || !escola.endereco_escola || !escola.email_escola || !escola.segmento_escola) {
-        res.status(400).json({
-          status: 'erro',
-          mensagem: 'Todas as escolas devem ter nome, endereço, email e segmentos'
-        });
-        return;
-      }
-      
-      // Validar se segmento_escola é um array
-      if (!Array.isArray(escola.segmento_escola)) {
-        res.status(400).json({
-          status: 'erro',
-          mensagem: 'O campo segmento_escola deve ser um array de strings em todas as escolas'
-        });
-        return;
-      }
-    }    // Importar escolas uma a uma
-    const resultados = [];
+    // Remover campos obsoletos de cada escola
+    const escolasLimpas = escolas.map(escola => {
+      const { segmento_escola, ...escolaLimpa } = escola;
+      return escolaLimpa;
+    });
     
-    for (const escola of escolas) {
-      try {
-        // Usamos o serviço para criar a escola
-        const resultado = await EscolaService.criarEscola(escola);
-        resultados.push({
-          email: escola.email_escola,
-          status: 'sucesso',
-          id: resultado.id // Se for um objeto, extraímos apenas o ID
-        });
-      } catch (error) {
-        resultados.push({
-          email: escola.email_escola,
-          status: 'erro',
-          mensagem: error instanceof Error ? error.message : 'Erro desconhecido'
-        });
-      }
-    }
+    const resultado = await EscolaService.importarEscolas(escolasLimpas);
     
     res.status(200).json({
       status: 'sucesso',
-      mensagem: 'Processo de importação concluído',
-      dados: {
-        total: escolas.length,
-        resultados
-      }
+      mensagem: `Importação concluída: ${resultado.sucesso} sucessos, ${resultado.falhas} falhas`,
+      dados: resultado
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -261,7 +228,8 @@ export const importarEscolasMassa = async (req: Request, res: Response): Promise
         status: 'erro',
         mensagem: 'Erro interno do servidor'
       });
-    }  }
+    }
+  }
 };
 
 export const listarEscolasComSegmentos = async (req: Request, res: Response): Promise<void> => {
@@ -286,5 +254,151 @@ export const listarEscolasComSegmentos = async (req: Request, res: Response): Pr
       status: 'erro',
       mensagem: 'Erro interno do servidor'
     });
+  }
+};
+
+// =====================================
+// GESTÃO DE SEGMENTOS
+// =====================================
+
+export const adicionarSegmentoEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { id_segmento } = req.body;
+    
+    if (!id_segmento) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do segmento é obrigatório'
+      });
+      return;
+    }
+    
+    const resultado = await EscolaService.adicionarSegmentoEscola(id, id_segmento);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: resultado.mensagem
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
+    }
+  }
+};
+
+export const removerSegmentoEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, id_segmento } = req.params;
+    
+    const resultado = await EscolaService.removerSegmentoEscola(id, id_segmento);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: resultado.mensagem
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
+    }
+  }
+};
+
+export const listarSegmentosEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const segmentos = await EscolaService.listarSegmentosEscola(id);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Segmentos da escola listados com sucesso',
+      dados: segmentos,
+      total: segmentos.length
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
+    }
+  }
+};
+
+// =====================================
+// MÉTRICAS E DASHBOARD
+// =====================================
+
+export const obterMetricasEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const metricas = await EscolaService.obterMetricasEscola(id);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Métricas da escola obtidas com sucesso',
+      dados: metricas
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
+    }
+  }
+};
+
+export const obterDashboardEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const dashboard = await EscolaService.obterDashboardEscola(id);
+    
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Dashboard da escola obtido com sucesso',
+      dados: dashboard
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+    } else {
+      res.status(500).json({
+        status: 'erro',
+        mensagem: 'Erro interno do servidor'
+      });
+    }
   }
 };
