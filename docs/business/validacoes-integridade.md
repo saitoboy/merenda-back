@@ -106,8 +106,8 @@ Este documento especifica as validações de integridade referencial implementad
 - ✅ Campo `ativo` → não pode ser `true`
 
 **Cenários de Teste:**
-- ❌ Período ativo → "Não é possível excluir período ativo."
-- ❌ Período com estoque → "Não é possível excluir período. Existem 50 registros de estoque para este período."
+- ❌ Período ativo → "Não é possível excluir um período ativo. Desative o período antes de excluí-lo."
+- ❌ Período com estoque → "Não é possível excluir período. Existem 50 registros de estoque vinculados a este período."
 - ✅ Período inativo sem estoque → Exclusão permitida
 
 ## 🔧 **Implementação Técnica**
@@ -119,81 +119,137 @@ export const excluir[Entidade] = async (id: string): Promise<void> => {
   try {
     logger.info(`Verificando se [entidade] ${id} pode ser excluída`);
     
-    // 1. Verificar dependências (uma por vez)
-    const dependencia1 = await verificarDependencia1(id);
-    if (dependencia1.total > 0) {
-      throw new Error(`Mensagem específica com quantidade: ${dependencia1.total}`);
+    // 1. Verificar se a entidade existe
+    const entidade = await [Entidade]Model.buscarPorId(id);
+    if (!entidade) {
+      throw new NotFoundError('[Entidade] não encontrada');
     }
     
-    const dependencia2 = await verificarDependencia2(id);
-    if (dependencia2.total > 0) {
-      throw new Error(`Mensagem específica com quantidade: ${dependencia2.total}`);
+    // 2. Verificar dependências (uma por vez para erro específico)
+    const dependenciasCount = await connection('tabela_dependencia')
+      .where('id_entidade', id)
+      .count('* as total')
+      .first();
+    
+    const totalDependencias = Number(dependenciasCount?.total || 0);
+    
+    if (totalDependencias > 0) {
+      logger.warning(`[Entidade] ${id} possui ${totalDependencias} dependências`);
+      throw new ConstraintViolationError(
+        `Não é possível excluir [entidade]. Existem ${totalDependencias} [dependências] vinculadas.`,
+        {
+          entidade: '[entidade]',
+          id: id,
+          dependencias: {
+            [tipo_dependencia]: totalDependencias
+          }
+        }
+      );
     }
     
-    // 2. Se passou nas validações, excluir
-    const resultado = await Model.excluir(id);
-    if (!resultado) {
-      throw new Error('[Entidade] não encontrada');
-    }
+    // 3. Se passou nas validações, excluir
+    await [Entidade]Model.excluir(id);
     
-    logger.success(`[Entidade] ${id} excluída com sucesso`);
+    logger.success(`[Entidade] ${entidade.nome} (${id}) excluída com sucesso`);
     
   } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ConstraintViolationError) {
+      // Re-throw errors customizados para serem tratados no controller
+      throw error;
+    }
+    
     logger.error(`Erro ao excluir [entidade]: ${error.message}`);
-    throw error;
+    throw new Error(`Erro interno: ${error.message}`);
   }
 };
 ```
 
-### **Padrão de Mensagens:**
+### **Padrão de Mensagens e Erros:**
 
 ```typescript
-// ❌ Mensagens de Erro (Constraint Violation)
+// ❌ Constraint Violation (ConstraintViolationError)
 "Não é possível excluir [entidade]. Existem [X] [dependências] vinculadas a esta [entidade]."
+
+// ❌ Not Found (NotFoundError)
+"[Entidade] não encontrada"
+
+// ❌ Invalid State (InvalidStateError) - para períodos ativos
+"Não é possível excluir um período ativo. Desative o período antes de excluí-lo."
 
 // ✅ Mensagens de Sucesso  
 "[Entidade] excluída com sucesso"
 
-// ⚠️ Mensagens de Aviso (Logs)
+// ⚠️ Mensagens de Logs
+"Verificando se [entidade] [id] pode ser excluída"
+"[Entidade] [nome] ([id]) excluída com sucesso"
 "[Entidade] possui [X] [dependências] vinculadas"
+```
+
+### **Estrutura de Response Padronizada:**
+
+```typescript
+// Success Response (200)
+{
+  "status": "sucesso",
+  "mensagem": "[Entidade] excluída com sucesso",
+  "dados": {
+    "id_[entidade]": "uuid",
+    "excluido_em": "2025-07-02T10:30:00.000Z"
+  }
+}
+
+// Error Response (400/404)
+{
+  "status": "erro",
+  "mensagem": "Mensagem específica do erro",
+  "codigo": "CONSTRAINT_VIOLATION|NOT_FOUND|INVALID_STATE",
+  "detalhes": {
+    "entidade": "nome_da_entidade",
+    "id": "uuid",
+    "dependencias": {
+      "tipo_dependencia": quantidade
+    }
+  },
+  "timestamp": "2025-07-02T10:30:00.000Z"
+}
 ```
 
 ## 📋 **Checklist de Implementação**
 
-### **Fase 1: Fornecedor**
-- [ ] Implementar validação no service
-- [ ] Adicionar função no controller
-- [ ] Atualizar rotas com validação
-- [ ] Testes unitários
-- [ ] Documentar endpoint
+### **Fase 1: Fornecedor** ✅
+- [x] Implementar validação no service
+- [x] Adicionar função no controller
+- [x] Atualizar rotas com validação
+- [x] Testes manuais realizados
+- [x] Documentar endpoint
 
-### **Fase 2: Item**
-- [ ] Implementar validação no service
-- [ ] Adicionar função no controller  
-- [ ] Atualizar rotas com validação
-- [ ] Testes unitários
-- [ ] Documentar endpoint
+### **Fase 2: Item** ✅
+- [x] Implementar validação no service
+- [x] Adicionar função no controller  
+- [x] Atualizar rotas com validação
+- [x] Testes manuais realizados
+- [x] Documentar endpoint
 
-### **Fase 3: Escola**
-- [ ] Implementar validação no service
-- [ ] Adicionar função no controller
-- [ ] Atualizar rotas com validação
-- [ ] Testes unitários
-- [ ] Documentar endpoint
+### **Fase 3: Escola** ✅
+- [x] Implementar validação no service
+- [x] Adicionar função no controller
+- [x] Atualizar rotas com validação
+- [x] Testes manuais realizados
+- [x] Documentar endpoint
 
-### **Fase 4: Segmento**
-- [ ] Implementar validação no service
-- [ ] Adicionar função no controller
-- [ ] Atualizar rotas com validação
-- [ ] Testes unitários
-- [ ] Documentar endpoint
+### **Fase 4: Segmento** ✅
+- [x] Implementar validação no service
+- [x] Adicionar função no controller
+- [x] Atualizar rotas com validação
+- [x] Testes manuais realizados
+- [x] Documentar endpoint
 
-### **Fase 5: Período**
-- [ ] Implementar validação no service
-- [ ] Adicionar função no controller
-- [ ] Atualizar rotas com validação
-- [ ] Testes unitários
-- [ ] Documentar endpoint
+### **Fase 5: Período** ✅
+- [x] Implementar validação no service
+- [x] Adicionar função no controller
+- [x] Atualizar rotas com validação
+- [x] Testes manuais realizados
+- [x] Documentar endpoint
 
 ## 🧪 **Estratégia de Testes**
 
@@ -261,9 +317,36 @@ graph TD
 - ⚡ Fazer verificações em paralelo quando possível
 - ⚡ Cache de validações para entidades frequentemente verificadas
 
+## 📋 **Resumo da Implementação Realizada**
+
+### **✅ Validações Implementadas:**
+1. **Fornecedor**: Verifica itens vinculados antes da exclusão
+2. **Item**: Verifica registros de estoque antes da exclusão  
+3. **Escola**: Verifica estoque e segmentos vinculados antes da exclusão
+4. **Segmento**: Verifica escolas e estoque vinculados antes da exclusão
+5. **Período**: Verifica se está ativo e se tem estoque vinculado antes da exclusão
+
+### **✅ Classes de Erro Customizadas:**
+- `NotFoundError`: Entidade não encontrada
+- `ConstraintViolationError`: Violação de integridade referencial
+- `InvalidStateError`: Estado inválido para operação
+- `ForbiddenError`: Falta de autorização
+
+### **✅ Padrão de Resposta Padronizado:**
+- Responses JSON estruturadas com status, mensagem, código e timestamp
+- Detalhes específicos sobre dependências encontradas
+- Logs detalhados para auditoria e monitoramento
+
+### **✅ Testes Realizados:**
+- Cenários de sucesso (exclusão sem dependências)
+- Cenários de erro (exclusão com dependências)
+- Cenários de autorização (perfis corretos/incorretos)
+- Cenários de entidade inexistente
+
 ---
 
 **Data de Criação:** 01/07/2025  
-**Versão:** 1.0  
+**Última Revisão:** 02/07/2025  
+**Versão:** 1.1  
 **Autor:** Sistema Merenda Smart Flow  
-**Status:** 📋 Documentado - Pronto para Implementação
+**Status:** ✅ Implementado e Testado
