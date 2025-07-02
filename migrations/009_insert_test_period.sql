@@ -18,7 +18,7 @@ INSERT INTO periodo_lancamento (
     '2025-06-01',                               -- data_inicio (01 de junho)
     '2025-06-15',                               -- data_fim (15 de junho)
     true,                                       -- ativo
-    '8949ccab-f799-4adb-ad3f-4099bebb2916',    -- criado_por (usuário admin)
+    '113d0ccc-2903-4c68-a89e-3394faba37be',    -- criado_por (usuário admin)
     NOW(),                                      -- created_at (agora)
     NOW()                                       -- updated_at (agora)
 )
