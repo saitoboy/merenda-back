@@ -1,6 +1,8 @@
 import * as PeriodoLancamentoModel from '../model/periodo-lancamento.model';
 import { PeriodoLancamento, CriarPeriodoLancamento, AtualizarPeriodoLancamento } from '../types';
 import { logger } from '../utils';
+import { ConstraintViolationError, NotFoundError } from '../utils/logger';
+import connection from '../connection';
 
 /**
  * Buscar todos os períodos de lançamento
@@ -297,23 +299,66 @@ export const desativarPeriodo = async (id: string) => {
  */
 export const excluirPeriodo = async (id: string) => {
   try {
-    logger.info(`Iniciando exclusão do período: ${id}`, 'periodo');
+    logger.info(`Iniciando validação de integridade para exclusão do período com ID: ${id}`, 'periodo');
     
+    // Verificar se o período existe
     const periodo = await PeriodoLancamentoModel.buscarPorId(id);
     if (!periodo) {
-      throw new Error('Período não encontrado');
+      logger.warning(`Período com ID ${id} não encontrado para exclusão`, 'periodo');
+      throw new NotFoundError('Período não encontrado');
     }
 
-    // Verificar se o período está ativo
+    // Verificar dependências: período ativo
     if (periodo.ativo) {
-      throw new Error('Não é possível excluir um período ativo');
+      logger.warning(`Tentativa de excluir período ativo: ${periodo.mes}/${periodo.ano}`, 'periodo');
+      throw new ConstraintViolationError('Não é possível excluir um período ativo. Desative o período antes de excluí-lo.', {
+        entidade: 'periodo',
+        id,
+        dependencias: {
+          ativo: 1
+        }
+      });
     }
 
+    // Verificar dependências: registros de estoque
+    logger.debug(`Verificando registros de estoque para período ${periodo.mes}/${periodo.ano}`, 'periodo');
+    const estoqueCount = await connection('estoque')
+      .where({ id_periodo: id })
+      .count('* as count')
+      .first();
+    
+    const totalEstoque = Number(estoqueCount?.count || 0);
+
+    // Se há registros de estoque, impedir exclusão
+    if (totalEstoque > 0) {
+      const mensagem = `Não é possível excluir período. Existem ${totalEstoque} registros de estoque vinculados a este período.`;
+      
+      logger.warning(mensagem, 'periodo');
+      throw new ConstraintViolationError(mensagem, {
+        entidade: 'periodo',
+        id,
+        dependencias: {
+          estoque: totalEstoque
+        }
+      });
+    }
+
+    // Se chegou até aqui, pode excluir
+    logger.debug(`Excluindo período ${periodo.mes}/${periodo.ano}`, 'periodo');
     await PeriodoLancamentoModel.excluir(id);
     
     logger.success(`Período ${periodo.mes}/${periodo.ano} excluído com sucesso`, 'periodo');
-    return { mensagem: 'Período excluído com sucesso' };
+    return { 
+      mensagem: 'Período excluído com sucesso',
+      id_periodo: id,
+      excluido_em: new Date().toISOString()
+    };
   } catch (error) {
+    // Re-lançar erros customizados
+    if (error instanceof ConstraintViolationError || error instanceof NotFoundError) {
+      throw error;
+    }
+    
     if (error instanceof Error) {
       logger.error(`Erro ao excluir período: ${error.message}`, 'periodo');
       throw new Error(`Erro ao excluir período: ${error.message}`);

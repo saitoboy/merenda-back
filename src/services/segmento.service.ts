@@ -178,14 +178,12 @@ export const excluirSegmento = async (id: string) => {
     
     // Verificar dependências: registros de estoque
     logger.debug(`Verificando registros de estoque para ${segmento.nome_segmento}`, 'segmento');
-    const resultEstoque = await connection.raw(`
-      SELECT COUNT(*) as total
-      FROM estoque e
-      INNER JOIN escola_segmento es ON e.id_escola = es.id_escola
-      WHERE es.id_segmento = ?
-    `, [id]);
+    const estoqueCount = await connection('estoque')
+      .where({ id_segmento: id })
+      .count('* as count')
+      .first();
     
-    const totalEstoque = parseInt(resultEstoque.rows?.[0]?.total || resultEstoque[0]?.total || '0');
+    const totalEstoque = Number(estoqueCount?.count || 0);
     
     // Se há dependências, impedir exclusão
     const dependencias: { [key: string]: number } = {};
