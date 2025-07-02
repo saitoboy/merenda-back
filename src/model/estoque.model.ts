@@ -1,4 +1,5 @@
 import connection from '../connection';
+import { logError } from '../utils/logger';
 import { Estoque, CriarEstoque, AtualizarEstoque, EstoqueCompleto, FiltroEstoque } from '../types';
 
 const table = 'estoque';
@@ -170,16 +171,21 @@ export const atualizar = async (id_estoque: string, dados: AtualizarEstoque): Pr
 // Atualizar data de validade de um item no estoque por ID
 export const atualizarValidade = async (id_estoque: string, validade: Date): Promise<boolean> => {
   try {
+    // Formatação manual para evitar problemas de fuso horário
+    const dataFormatada = validade.getFullYear() + '-' + 
+                         String(validade.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(validade.getDate()).padStart(2, '0');
+    
     const updated = await connection(table)
       .where({ id_estoque })
       .update({ 
-        validade: validade.toISOString().split('T')[0],
+        validade: dataFormatada,
         atualizado_em: new Date()
       });
     
     return updated > 0;
   } catch (error) {
-    console.error('Erro ao atualizar validade:', error);
+    logError('Erro ao atualizar validade no banco', 'model', error);
     return false;
   }
 };

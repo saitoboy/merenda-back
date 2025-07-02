@@ -12,6 +12,7 @@ import {
   atualizarDataValidade as atualizarDataValidadeService
 } from '../services/estoque.service';
 import { buscarSegmentosPorEscola } from '../model/escola-segmento.model';
+import { logInfo, logError, logWarning } from '../utils/logger';
 
 export const listarEstoquePorEscola = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -397,8 +398,14 @@ export const atualizarDataValidade = async (req: Request, res: Response): Promis
     const { id_estoque } = req.params;
     const { data_validade } = req.body;
 
+    logInfo(`Iniciando atualização de validade - Estoque ID: ${id_estoque}`, 'controller', {
+      data_recebida: data_validade,
+      tipo: typeof data_validade
+    });
+
     // Validar se a data foi fornecida
     if (!data_validade) {
+      logWarning('Data de validade não fornecida', 'controller');
       res.status(400).json({
         status: 'erro',
         mensagem: 'Data de validade é obrigatória'
@@ -406,23 +413,79 @@ export const atualizarDataValidade = async (req: Request, res: Response): Promis
       return;
     }
 
-    // Converter string para Date
-    const novaValidade = new Date(data_validade);
-    if (isNaN(novaValidade.getTime())) {
+    // Validar formato de string para YYYY-MM-DD
+    if (typeof data_validade === 'string') {
+      const formatoDataRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!formatoDataRegex.test(data_validade)) {
+        logWarning(`Formato de data inválido: ${data_validade}`, 'controller');
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Formato de data inválido. Use YYYY-MM-DD (ex: 2025-07-03)'
+        });
+        return;
+      }
+    }
+
+    let dataParaProcessar: Date | string;
+
+    // Se for string, fazer parse seguro sem UTC
+    if (typeof data_validade === 'string') {
+      const partes = data_validade.split('-');
+      if (partes.length === 3) {
+        const ano = parseInt(partes[0]);
+        const mes = parseInt(partes[1]) - 1; // Mês é 0-indexado
+        const dia = parseInt(partes[2]);
+        
+        // Criar Date com timezone local para evitar problemas de UTC
+        dataParaProcessar = new Date(ano, mes, dia);
+        logInfo(`Data parseada localmente: ${dataParaProcessar.toLocaleDateString('pt-BR')}`, 'controller');
+      } else {
+        logError('Não foi possível parsear a data - Formato inválido', 'controller');
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Formato de data inválido. Use YYYY-MM-DD'
+        });
+        return;
+      }
+    } else if (data_validade instanceof Date) {
+      dataParaProcessar = data_validade;
+      logInfo(`Data já é objeto Date: ${dataParaProcessar.toLocaleDateString('pt-BR')}`, 'controller');
+    } else {
+      logError(`Tipo de data não suportado: ${typeof data_validade}`, 'controller');
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Formato de data inválido. Use YYYY-MM-DD'
+        mensagem: 'Tipo de data inválido. Envie string YYYY-MM-DD ou objeto Date'
       });
       return;
     }
 
-    const resultado = await atualizarDataValidadeService(id_estoque, novaValidade);
+    // Verificar se a data é válida
+    if (dataParaProcessar instanceof Date && isNaN(dataParaProcessar.getTime())) {
+      logError('Data inválida após parsing', 'controller');
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Data inválida'
+      });
+      return;
+    }
+
+    // Chamar o service que já trata todos os aspectos de timezone e validação
+    const resultado = await atualizarDataValidadeService(id_estoque, dataParaProcessar);
     
+    logInfo('Validade atualizada com sucesso', 'controller', {
+      id_estoque: resultado.id_estoque,
+      nova_validade: resultado.nova_validade,
+      validade_anterior: resultado.validade_anterior
+    });
+
     res.status(200).json({
       status: 'sucesso',
+      mensagem: 'Data de validade atualizada com sucesso',
       dados: resultado
     });
   } catch (error) {
+    logError(`Erro ao atualizar validade - Estoque ID: ${req.params.id_estoque}`, 'controller', error);
+    
     if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',

@@ -259,6 +259,108 @@ Remove um item específico do estoque.
 
 ---
 
+### Atualizar Data de Validade
+
+Atualiza especificamente a data de validade de um item do estoque.
+
+**URL**: `/estoque/:id/validade`
+
+**Método**: `PUT`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista, Gestor Escolar (apenas da própria escola)
+
+#### Parâmetros da URL
+
+- `id`: ID do estoque (UUID)
+
+#### Corpo da Requisição
+
+```json
+{
+  "validade": "2025-12-31"
+}
+```
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Data de validade atualizada com sucesso",
+  "dados": {
+    "id_estoque": "uuid-estoque-1",
+    "nova_validade": "2025-12-31",
+    "validade_anterior": "2024-12-31",
+    "atualizado_em": "2025-07-02T10:30:00.000Z"
+  }
+}
+```
+
+#### Validações Aplicadas
+
+- ✅ **Item existe**: Verifica se o item de estoque existe
+- ✅ **Data válida**: Impede datas no passado
+- ✅ **Formato de data**: Aceita formato `YYYY-MM-DD` ou ISO string
+- ✅ **Normalização de fuso horário**: Corrige automaticamente problemas de timezone
+- ✅ **Persistência exata**: Data salva exatamente como enviada na requisição
+
+#### Tratamento de Fuso Horário
+
+⚠️ **Problema Corrigido**: Versões anteriores podiam salvar datas com um dia de diferença devido à conversão automática de fuso horário.
+
+✅ **Solução Implementada**: 
+- Normalização automática da data para formato local
+- Formatação manual evitando conversões UTC
+- Data persistida exatamente como enviada na requisição
+
+#### Códigos de Erro
+
+- `400`: Data de validade inválida ou no passado
+- `404`: Item de estoque não encontrado
+- `403`: Usuário sem permissão para atualizar validade deste estoque
+
+#### Exemplo de Erro - Data no Passado
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Data de validade não pode ser no passado",
+  "codigo": "INVALID_DATE",
+  "detalhes": {
+    "data_informada": "2024-01-01",
+    "data_atual": "2025-07-02"
+  }
+}
+```
+
+#### Exemplo de Erro - Item Não Encontrado
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Item de estoque não encontrado",
+  "codigo": "NOT_FOUND"
+}
+```
+
+#### Teste de Validação - Fuso Horário
+
+```bash
+# Teste: Enviar data específica e verificar se é salva corretamente
+curl -X PUT "http://localhost:3000/estoque/uuid-item/validade" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer token" \
+  -d '{"validade": "2025-07-03"}'
+
+# Resultado esperado: Data salva como "2025-07-03" (não "2025-07-02")
+```
+
+---
+
 ## 📊 Consultas Avançadas
 
 ### Estoque por Escola e Segmento
@@ -668,6 +770,7 @@ Retorna métricas consolidadas para dashboard de uma escola específica.
 | `GET /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `POST /estoque` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `PUT /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `PUT /estoque/:id/validade` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `DELETE /estoque/:id` | ✅ | ✅ | ❌ | ❌ |
 | `GET /estoque/escola/:id/segmento/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `GET /estoque/alertas` | ✅ | ✅ | ✅ (própria escola) | ❌ |
@@ -710,6 +813,44 @@ O sistema gera alertas automáticos baseados em:
 - Percentual do valor ideal (padrão: < 20% = crítico)
 - Dias para vencimento (padrão: < 30 dias = atenção)
 - Configurações personalizáveis por escola/segmento
+
+### Atualização de Validade
+
+A funcionalidade de atualização de validade permite:
+- **Atualização específica**: Altera apenas a data de validade sem afetar outros campos
+- **Validação rigorosa**: Impede datas no passado para manter integridade
+- **Correção de fuso horário**: Resolve automaticamente problemas de timezone
+- **Persistência exata**: Data salva exatamente como enviada (ex: "2025-07-03" → "2025-07-03")
+- **Auditoria**: Registra validade anterior e nova para rastreabilidade
+- **Permissões granulares**: Gestores escolares podem atualizar apenas da própria escola
+
+#### Problema de Fuso Horário Resolvido
+
+**Issue anterior**: Datas enviadas como `"2025-07-03"` eram salvas como `"2025-07-02"` devido à conversão UTC.
+
+**Correção aplicada**:
+- Formatação manual da data evitando `toISOString()`
+- Normalização de horário para comparação local
+- Criação segura de objetos Date para strings YYYY-MM-DD
+
+#### Exemplos Práticos de Uso
+
+```bash
+# Atualizar validade de um item de estoque
+curl -X PUT http://localhost:3000/estoque/uuid-estoque-1/validade \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{"validade": "2025-12-31"}'
+
+# Resultado: Data salva exatamente como "2025-12-31"
+```
+
+**Casos de Uso Comuns:**
+- ✅ Correção de erro de digitação na validade
+- ✅ Atualização após reembalagem de produtos
+- ✅ Extensão de prazo por análise técnica
+- ✅ Ajuste após verificação física do estoque
+- ✅ Correção de problemas de fuso horário em dados migrados
 
 ### Auditoria
 

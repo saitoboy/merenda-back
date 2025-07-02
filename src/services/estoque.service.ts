@@ -3,6 +3,7 @@ import * as EscolaModel from '../model/escola.model';
 import * as ItemModel from '../model/item.model';
 import * as SegmentoModel from '../model/segmento.model';
 import * as PeriodoModel from '../model/periodo-lancamento.model';
+import { logInfo, logError, logWarning } from '../utils/logger';
 import { 
   Estoque, 
   CriarEstoque, 
@@ -435,36 +436,71 @@ export const obterResumoDashboard = async (idEscola: string) => {
 // ATUALIZAR DATA DE VALIDADE (ESCOLA)
 // =====================================
 
-export const atualizarDataValidade = async (idEstoque: string, validade: Date) => {
+export const atualizarDataValidade = async (idEstoque: string, validade: Date | string) => {
   try {
+    logInfo(`Iniciando atualização de validade para estoque: ${idEstoque}`, 'service');
+    
     // Verificar se o item de estoque existe
     const estoqueExistente = await EstoqueModel.buscarPorId(idEstoque);
     if (!estoqueExistente) {
+      logError(`Item de estoque não encontrado: ${idEstoque}`, 'service');
       throw new Error('Item de estoque não encontrado');
     }
 
-    // Validar se a data não é no passado
+    logInfo(`Item encontrado. Validade atual: ${estoqueExistente.validade}`, 'service');
+
+    // Normalizar horário para comparação de datas (zerar horas)
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    validade.setHours(0, 0, 0, 0);
     
-    if (validade < hoje) {
+    // Criar data de validade segura para strings YYYY-MM-DD
+    let dataValidade: Date;
+    if (typeof validade === 'string' && validade.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Para strings YYYY-MM-DD, criar Date com construtor seguro
+      const [ano, mes, dia] = validade.split('-').map(Number);
+      dataValidade = new Date(ano, mes - 1, dia); // mes - 1 porque Date usa base 0
+    } else {
+      dataValidade = new Date(validade);
+    }
+    
+    // Normalizar horário da data de validade
+    dataValidade.setHours(0, 0, 0, 0);
+    
+    logInfo(`Data normalizada: ${dataValidade.toDateString()}, Hoje: ${hoje.toDateString()}`, 'service');
+    
+    // Validar se a data não é no passado
+    if (dataValidade < hoje) {
+      logWarning(`Data no passado rejeitada: ${dataValidade.toDateString()}`, 'service');
       throw new Error('Data de validade não pode ser no passado');
     }
 
+    // Salvar validade anterior para auditoria
+    const validadeAnterior = estoqueExistente.validade;
+
     // Atualizar a data de validade
-    const sucesso = await EstoqueModel.atualizarValidade(idEstoque, validade);
+    const sucesso = await EstoqueModel.atualizarValidade(idEstoque, dataValidade);
     
     if (!sucesso) {
+      logError(`Falha ao atualizar data de validade no banco: ${idEstoque}`, 'service');
       throw new Error('Falha ao atualizar data de validade');
     }
+
+    // Formatação consistente - sempre retornar YYYY-MM-DD
+    const novaValidadeFormatada = dataValidade.getFullYear() + '-' + 
+                                 String(dataValidade.getMonth() + 1).padStart(2, '0') + '-' + 
+                                 String(dataValidade.getDate()).padStart(2, '0');
+
+    logInfo(`Validade atualizada com sucesso: ${idEstoque} -> ${novaValidadeFormatada}`, 'service');
 
     return {
       mensagem: 'Data de validade atualizada com sucesso',
       id_estoque: idEstoque,
-      nova_validade: validade.toISOString().split('T')[0]
+      nova_validade: novaValidadeFormatada,
+      validade_anterior: validadeAnterior,
+      atualizado_em: new Date().toISOString()
     };
   } catch (error) {
+    logError('Erro ao atualizar validade', 'service', error);
     if (error instanceof Error) {
       throw new Error(`Erro ao atualizar data de validade: ${error.message}`);
     } else {
