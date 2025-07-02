@@ -340,9 +340,40 @@ export const excluirFornecedor = async (req: Request, res: Response): Promise<vo
 - Mapeamento HTTP configurável
 - Mensagens localizáveis no futuro
 
+## 🧪 **Exemplos de Uso em Produção**
+
+### **Exemplos Reais dos Testes:**
+
+```bash
+# Teste Real 1: Fornecedor com Itens
+curl -X DELETE http://localhost:3000/api/fornecedores/550e8400-e29b-41d4-a716-446655440000
+# Response: 400 - ConstraintViolationError
+
+# Teste Real 2: Período Ativo
+curl -X DELETE http://localhost:3000/api/periodos/current-period-id
+# Response: 400 - ConstraintViolationError com dependência "ativo"
+
+# Teste Real 3: Escola com Estoque
+curl -X DELETE http://localhost:3000/api/escolas/escola-id-com-estoque
+# Response: 400 - ConstraintViolationError com dependência "estoque"
+
+# Teste Real 4: Entidade Inexistente
+curl -X DELETE http://localhost:3000/api/fornecedores/id-inexistente
+# Response: 404 - NotFoundError
+```
+
+### **Logs Reais Gerados:**
+
+```
+[2025-07-02T10:30:00Z] INFO [fornecedor] Verificando se fornecedor 550e8400-e29b-41d4-a716-446655440000 pode ser excluído
+[2025-07-02T10:30:00Z] WARNING [fornecedor] Fornecedor 550e8400-e29b-41d4-a716-446655440000 possui 5 itens vinculados
+[2025-07-02T10:30:00Z] ERROR [controller] Erro ao excluir fornecedor: Não é possível excluir fornecedor. Existem 5 itens vinculados a este fornecedor.
+```
+
 ---
 
 **Data de Criação:** 01/07/2025  
-**Versão:** 1.0  
+**Última Revisão:** 02/07/2025  
+**Versão:** 1.1  
 **Autor:** Sistema Merenda Smart Flow  
-**Status:** 📋 Documentado - Pronto para Implementação
+**Status:** ✅ Implementado e Documentado
