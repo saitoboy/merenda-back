@@ -1,6 +1,8 @@
 import * as FornecedorModel from '../model/fornecedor.model';
 import { Fornecedor } from '../types';
 import { compararSenha, criptografarSenha, gerarUUID, logger } from '../utils';
+import { NotFoundError, ConstraintViolationError } from '../utils/logger';
+import connection from '../connection';
 
 export const buscarTodosFornecedores = async () => {
   try {
@@ -141,25 +143,58 @@ export const atualizarFornecedor = async (id: string, dados: Partial<Fornecedor>
   }
 };
 
-export const excluirFornecedor = async (id: string) => {
+// =====================================
+// EXCLUIR FORNECEDOR (COM VALIDAÇÃO DE INTEGRIDADE)
+// =====================================
+
+export const excluirFornecedor = async (id_fornecedor: string): Promise<void> => {
   try {
-    // Verificar se o fornecedor existe
-    const fornecedor = await FornecedorModel.buscarPorId(id);
+    logger.info(`Verificando se fornecedor ${id_fornecedor} pode ser excluído`, 'fornecedor');
     
+    // 1. Verificar se o fornecedor existe
+    const fornecedor = await FornecedorModel.buscarPorId(id_fornecedor);
     if (!fornecedor) {
-      throw new Error('Fornecedor não encontrado');
+      throw new NotFoundError('Fornecedor não encontrado');
     }
     
-    // Excluir o fornecedor
-    await FornecedorModel.excluir(id);
+    // 2. Verificar se existem itens vinculados ao fornecedor
+    const itensVinculados = await connection('item')
+      .where('id_fornecedor', id_fornecedor)
+      .count('* as total')
+      .first();
     
-    return {
-      mensagem: 'Fornecedor excluído com sucesso'
-    };
+    const totalItens = Number(itensVinculados?.total || 0);
+    
+    if (totalItens > 0) {
+      logger.warning(`Fornecedor ${id_fornecedor} possui ${totalItens} itens vinculados`, 'fornecedor');
+      throw new ConstraintViolationError(
+        `Não é possível excluir fornecedor. Existem ${totalItens} itens vinculados a este fornecedor.`,
+        {
+          entidade: 'fornecedor',
+          id: id_fornecedor,
+          dependencias: {
+            itens: totalItens
+          }
+        }
+      );
+    }
+    
+    // 3. Se não há itens vinculados, pode excluir
+    await FornecedorModel.excluir(id_fornecedor);
+    
+    logger.success(`Fornecedor ${fornecedor.nome_fornecedor} (${id_fornecedor}) excluído com sucesso`, 'fornecedor');
+    
   } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ConstraintViolationError) {
+      // Re-throw errors customizados para serem tratados no controller
+      throw error;
+    }
+    
     if (error instanceof Error) {
+      logger.error(`Erro ao excluir fornecedor: ${error.message}`, 'fornecedor');
       throw new Error(`Erro ao excluir fornecedor: ${error.message}`);
     } else {
+      logger.error('Erro desconhecido ao excluir fornecedor', 'fornecedor');
       throw new Error('Erro desconhecido ao excluir fornecedor');
     }
   }

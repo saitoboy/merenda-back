@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as FornecedorService from '../services/fornecedor.service';
 import { logger } from '../utils';
+import { isIntegrityError, mapErrorToHttpResponse } from '../utils/logger';
 
 export const listarFornecedores = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -131,25 +132,45 @@ export const atualizarFornecedor = async (req: Request, res: Response): Promise<
   }
 };
 
+// =====================================
+// EXCLUIR FORNECEDOR (COM VALIDAÇÃO DE INTEGRIDADE)
+// =====================================
+
 export const excluirFornecedor = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_fornecedor } = req.params;
     
-    const resultado = await FornecedorService.excluirFornecedor(id_fornecedor);
+    await FornecedorService.excluirFornecedor(id_fornecedor);
     
     res.status(200).json({
       status: 'sucesso',
       mensagem: 'Fornecedor excluído com sucesso',
-      dados: resultado
+      dados: {
+        id_fornecedor,
+        excluido_em: new Date().toISOString()
+      }
     });
+    
   } catch (error) {
+    // Tratar erros customizados de integridade
+    if (isIntegrityError(error)) {
+      const { status, response } = mapErrorToHttpResponse(error);
+      res.status(status).json(response);
+      return;
+    }
+    
+    // Tratar outros erros
     if (error instanceof Error) {
+      logger.error(`Erro ao excluir fornecedor: ${error.message}`, 'controller');
       res.status(400).json({
         status: 'erro',
         mensagem: error.message
       });
+      return;
     }
     
+    // Erro não mapeado
+    logger.error('Erro interno do servidor ao excluir fornecedor', 'controller');
     res.status(500).json({
       status: 'erro',
       mensagem: 'Erro interno do servidor'

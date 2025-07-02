@@ -25,7 +25,7 @@ Retorna todos os itens cadastrados no sistema.
       "id_item": "uuid-item-1",
       "nome_item": "Arroz Integral",
       "unidade_medida": "Kg",
-      "sazonalidade": "Ano todo",
+      "sazonalidade": "quinzenal",
       "id_fornecedor": "uuid-fornecedor-1",
       "preco_item": 7.50
     },
@@ -33,7 +33,7 @@ Retorna todos os itens cadastrados no sistema.
       "id_item": "uuid-item-2",
       "nome_item": "Feijão Carioca",
       "unidade_medida": "Kg",
-      "sazonalidade": "Ano todo",
+      "sazonalidade": "mensal",
       "id_fornecedor": "uuid-fornecedor-2",
       "preco_item": 9.20
     }

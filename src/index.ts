@@ -8,6 +8,8 @@ import { logger } from './utils';
 // Importação das rotas
 import authRouter from './routes/auth.routes';
 import escolaRouter from './routes/escola.routes';
+import segmentoRouter from './routes/segmento.routes';
+import periodoLancamentoRouter from './routes/periodo-lancamento.routes';
 import estoqueRouter from './routes/estoque.routes';
 import fornecedorRouter from './routes/fornecedor.routes';
 import pedidoRouter from './routes/pedido.routes';
@@ -102,6 +104,12 @@ logger.debug('Rotas de autenticação registradas', 'route');
 
 app.use('/escolas', escolaRouter);
 logger.debug('Rotas de escolas registradas', 'route');
+
+app.use('/segmentos', segmentoRouter);
+logger.debug('Rotas de segmentos registradas', 'route');
+
+app.use('/periodos', periodoLancamentoRouter);
+logger.debug('Rotas de períodos de lançamento registradas', 'route');
 
 app.use('/estoque', estoqueRouter);
 logger.debug('Rotas de estoque registradas', 'route');

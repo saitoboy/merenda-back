@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as ItemService from '../services/item.service';
 import { logger } from '../utils';
+import { isIntegrityError, mapErrorToHttpResponse } from '../utils/logger';
 
 export const listarItens = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -177,19 +178,34 @@ export const atualizarItem = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// =====================================
+// EXCLUIR ITEM (COM VALIDAÇÃO DE INTEGRIDADE)
+// =====================================
+
 export const excluirItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id_item } = req.params;
-    logger.info(`Recebendo solicitação para excluir item com ID: ${id_item}`, 'controller');
     
-    const resultado = await ItemService.excluirItem(id_item);
+    await ItemService.excluirItem(id_item);
     
-    logger.success(`Item ${id_item} excluído com sucesso`, 'controller');
     res.status(200).json({
       status: 'sucesso',
-      mensagem: resultado.mensagem
+      mensagem: 'Item excluído com sucesso',
+      dados: {
+        id_item,
+        excluido_em: new Date().toISOString()
+      }
     });
+    
   } catch (error) {
+    // Tratar erros customizados de integridade
+    if (isIntegrityError(error)) {
+      const { status, response } = mapErrorToHttpResponse(error);
+      res.status(status).json(response);
+      return;
+    }
+    
+    // Tratar outros erros
     if (error instanceof Error) {
       logger.error(`Erro ao excluir item: ${error.message}`, 'controller');
       res.status(400).json({
@@ -199,6 +215,7 @@ export const excluirItem = async (req: Request, res: Response): Promise<void> =>
       return;
     }
     
+    // Erro não mapeado
     logger.error('Erro interno do servidor ao excluir item', 'controller');
     res.status(500).json({
       status: 'erro',

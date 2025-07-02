@@ -2,6 +2,8 @@ import * as ItemModel from '../model/item.model';
 import * as FornecedorModel from '../model/fornecedor.model';
 import { Item } from '../types';
 import { gerarUUID, logger } from '../utils';
+import { NotFoundError, ConstraintViolationError } from '../utils/logger';
+import connection from '../connection';
 
 export const buscarTodosItens = async () => {
   try {
@@ -163,28 +165,53 @@ export const atualizarItem = async (idItem: string, dados: Partial<Item>) => {
   }
 };
 
-export const excluirItem = async (idItem: string) => {
+// =====================================
+// EXCLUIR ITEM (COM VALIDAÇÃO DE INTEGRIDADE)
+// =====================================
+
+export const excluirItem = async (id_item: string): Promise<void> => {
   try {
-    logger.info(`Iniciando exclusão do item com ID: ${idItem}`, 'item');
+    logger.info(`Verificando se item ${id_item} pode ser excluído`, 'item');
     
-    // Verificar se o item existe
-    logger.debug(`Verificando se o item ${idItem} existe`, 'item');
-    const item = await ItemModel.buscarPorId(idItem);
-    
+    // 1. Verificar se o item existe
+    const item = await ItemModel.buscarPorId(id_item);
     if (!item) {
-      logger.warning(`Item com ID ${idItem} não encontrado para exclusão`, 'item');
-      throw new Error('Item não encontrado');
+      throw new NotFoundError('Item não encontrado');
     }
     
-    // Excluir o item
-    logger.debug(`Excluindo item ${idItem}`, 'item');
-    await ItemModel.excluir(idItem);
-    logger.success(`Item ${item.nome_item} excluído com sucesso`, 'item');
+    // 2. Verificar se existem registros de estoque para este item
+    const estoqueVinculado = await connection('estoque')
+      .where('id_item', id_item)
+      .count('* as total')
+      .first();
     
-    return {
-      mensagem: 'Item excluído com sucesso'
-    };
+    const totalEstoque = Number(estoqueVinculado?.total || 0);
+    
+    if (totalEstoque > 0) {
+      logger.warning(`Item ${id_item} possui ${totalEstoque} registros de estoque`, 'item');
+      throw new ConstraintViolationError(
+        `Não é possível excluir item. Existem ${totalEstoque} registros de estoque para este item.`,
+        {
+          entidade: 'item',
+          id: id_item,
+          dependencias: {
+            estoque: totalEstoque
+          }
+        }
+      );
+    }
+    
+    // 3. Se não há estoque vinculado, pode excluir
+    await ItemModel.excluir(id_item);
+    
+    logger.success(`Item ${item.nome_item} (${id_item}) excluído com sucesso`, 'item');
+    
   } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ConstraintViolationError) {
+      // Re-throw errors customizados para serem tratados no controller
+      throw error;
+    }
+    
     if (error instanceof Error) {
       logger.error(`Erro ao excluir item: ${error.message}`, 'item');
       throw new Error(`Erro ao excluir item: ${error.message}`);
