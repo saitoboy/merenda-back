@@ -1,0 +1,49 @@
+# Teste de Redefinição de Senha - Merenda Smart Flow
+# Use este arquivo com a extensão REST Client do VS Code
+
+### 1. ENVIAR CÓDIGO OTP
+POST http://localhost:3003/auth/enviar-otp
+Content-Type: application/json
+
+{
+  "email": "guilherme.saito@edu.muriae.mg.gov.br"
+}
+
+### 2. VERIFICAR OTP E REDEFINIR SENHA
+POST http://localhost:3003/auth/verificar-otp
+Content-Type: application/json
+
+{
+  "email": "guilherme.saito@edu.muriae.mg.gov.br",
+  "codigo_otp": "SUBSTITUA_PELO_CODIGO_RECEBIDO",
+  "nova_senha": "minhaNovaSenha456!"
+}
+
+### 3. TESTAR LOGIN COM NOVA SENHA
+POST http://localhost:3003/auth/login
+Content-Type: application/json
+
+{
+  "email": "guilherme.saito@edu.muriae.mg.gov.br",
+  "senha": "minhaNovaSenha456!"
+}
+
+### 4. CRIAR USUÁRIO DE TESTE (SE NECESSÁRIO)
+POST http://localhost:3003/auth/registrar
+Content-Type: application/json
+
+{
+  "nome_usuario": "Guilherme",
+  "sobrenome_usuario": "Saito", 
+  "email_usuario": "guilherme.saito@edu.muriae.mg.gov.br",
+  "senha_usuario": "senha123",
+  "tipo_usuario": "admin"
+}
+
+### 5. OBTER ESTATÍSTICAS OTP (ADMIN)
+GET http://localhost:3003/auth/otp/stats
+Authorization: Bearer SEU_TOKEN_JWT_AQUI
+
+### 6. LIMPAR OTPs EXPIRADOS (ADMIN)
+POST http://localhost:3003/auth/otp/limpar-expirados
+Authorization: Bearer SEU_TOKEN_JWT_AQUI

@@ -4,6 +4,7 @@ import cors from "cors";
 import { AddressInfo } from "net";
 import connection from "./connection";
 import { logger } from './utils';
+import { initializeEmailService } from './utils/email-service';
 
 // Importação das rotas
 import authRouter from './routes/auth.routes';
@@ -14,6 +15,7 @@ import estoqueRouter from './routes/estoque.routes';
 import fornecedorRouter from './routes/fornecedor.routes';
 import pedidoRouter from './routes/pedido.routes';
 import itemRouter from './routes/item.routes';
+import diagnosticoRouter from './routes/diagnostico.routes';
 
 const app = express();
 
@@ -123,7 +125,19 @@ logger.debug('Rotas de pedidos registradas', 'route');
 app.use('/itens', itemRouter);
 logger.debug('Rotas de itens registradas', 'route');
 
+app.use('/diagnostico', diagnosticoRouter);
+logger.debug('Rotas de diagnóstico registradas', 'route');
+
 logger.success('Todas as rotas registradas com sucesso!', 'route');
+
+// Inicializar serviço de email
+initializeEmailService()
+  .then(() => {
+    logger.success('Serviço de email inicializado com sucesso', 'email');
+  })
+  .catch((error) => {
+    logger.warning('Falha ao inicializar serviço de email, continuando sem ele', 'email', error);
+  });
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {

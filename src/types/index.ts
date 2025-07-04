@@ -183,6 +183,40 @@ export interface PeriodoLancamentoCompleto extends PeriodoLancamento {
   total_itens_estoque?: number;
 }
 
+// Interface para redefinição de senha com OTP
+export interface PasswordResetOTP {
+  id_otp: string; // UUID
+  id_usuario: string; // UUID - referência ao usuário
+  email_usuario: string; // Email (para logs e verificações)
+  codigo_otp: string; // Código de 6 dígitos
+  tentativas: number; // Contador de tentativas
+  usado: boolean; // Se já foi usado
+  data_criacao: Date;
+  data_expiracao: Date;
+}
+
+// Interface para dados de envio de OTP
+export interface EnviarOTPRequest {
+  email: string;
+}
+
+// Interface para dados de verificação de OTP
+export interface VerificarOTPRequest {
+  email: string;
+  codigo_otp: string;
+  nova_senha: string;
+}
+
+// Interface para resposta de envio de OTP
+export interface EnviarOTPResponse {
+  mensagem: string;
+  dados_depuracao?: {
+    codigo_gerado?: string; // Apenas para desenvolvimento
+    tempo_expiracao?: string;
+    email_valido?: boolean;
+  };
+}
+
 // Enum para status de resposta da API
 export enum StatusResposta {
   SUCESSO = 'sucesso',
