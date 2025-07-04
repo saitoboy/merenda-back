@@ -20,7 +20,7 @@ const OTP_CONFIG = {
   CODIGO_LENGTH: 6,
   EXPIRACAO_MINUTOS: 15,
   MAX_TENTATIVAS: 3,
-  RATE_LIMIT_HORAS: 1,
+  RATE_LIMIT_HORAS: 5/60, // 5 minutos em horas (0.0833...)
   MAX_OTPS_POR_HORA: 3
 };
 
@@ -71,7 +71,7 @@ export const enviarOTP = async (request: EnviarOTPRequest): Promise<EnviarOTPRes
 
     if (tentativasRecentes >= OTP_CONFIG.MAX_OTPS_POR_HORA) {
       logWarning(`Rate limit excedido para usuário ${usuario.id_usuario}: ${tentativasRecentes} tentativas`, 'otp');
-      throw new Error(`Muitas tentativas. Aguarde ${OTP_CONFIG.RATE_LIMIT_HORAS} hora(s) antes de tentar novamente.`);
+      throw new Error(`Muitas tentativas. Aguarde 5 minutos antes de tentar novamente.`);
     }
 
     // 4. Verificar se serviço de email está disponível

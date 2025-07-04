@@ -42,8 +42,10 @@ class EmailService {
     try {
       logInfo('Inicializando serviço de email...', 'email');
 
-      // Verificar se estamos em desenvolvimento
-      this.isDevelopment = process.env.NODE_ENV === 'development' || !process.env.SMTP_HOST;
+      // Verificar se devemos usar SMTP real ou modo desenvolvimento
+      // Se temos configuração SMTP, usar sempre ela, mesmo em development
+      const hasSmtpConfig = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD;
+      this.isDevelopment = !hasSmtpConfig;
 
       if (this.isDevelopment) {
         await this.setupDevelopmentEmail();
@@ -99,7 +101,7 @@ class EmailService {
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
+        pass: process.env.SMTP_PASSWORD || '',
       },
     };
 
@@ -189,12 +191,12 @@ class EmailService {
    * Envia email com código OTP
    */
   async sendOTPEmail(email: string, codigo: string, tempoExpiracao: number): Promise<EmailResult> {
-    const subject = 'Código de Verificação - Merenda Smart Flow';
+    const subject = 'Código de Verificação - Caminho da Merenda';
     
     const text = `
 Olá!
 
-Você solicitou a redefinição de sua senha no sistema Merenda Smart Flow.
+Você solicitou a redefinição de sua senha no sistema Caminho da Merenda.
 
 Seu código de verificação é: ${codigo}
 
@@ -203,7 +205,7 @@ Este código é válido por ${tempoExpiracao} minutos.
 Se você não solicitou esta redefinição, ignore este email.
 
 Atenciosamente,
-Equipe Merenda Smart Flow
+Equipe Caminho da Merenda
     `.trim();
 
     const html = `
@@ -214,9 +216,10 @@ Equipe Merenda Smart Flow
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .header { background: #2e4e37; color: white; padding: 20px; text-align: center; }
+        .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
         .content { padding: 20px; background: #f8f9fa; }
-        .code { background: #e74c3c; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0; }
+        .code { background: #9b1222; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0; border-radius: 8px; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
         .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 15px 0; }
     </style>
@@ -224,21 +227,21 @@ Equipe Merenda Smart Flow
 <body>
     <div class="container">
         <div class="header">
-            <h1>🍎 Merenda Smart Flow</h1>
+            <img src="https://digiescola.muriae.mg.gov.br/wp-content/uploads/2025/06/logo-04.png" alt="Caminho da Merenda" class="logo">
             <p>Redefinição de Senha</p>
         </div>
         
         <div class="content">
             <h2>Código de Verificação</h2>
             <p>Olá!</p>
-            <p>Você solicitou a redefinição de sua senha no sistema Merenda Smart Flow.</p>
+            <p>Você solicitou a redefinição de sua senha no sistema Caminho da Merenda.</p>
             
             <div class="code">${codigo}</div>
             
             <p><strong>Importante:</strong></p>
             <ul>
                 <li>Este código é válido por <strong>${tempoExpiracao} minutos</strong></li>
-                <li>Use este código apenas no site oficial do Merenda Smart Flow</li>
+                <li>Use este código apenas no site oficial do Caminho da Merenda</li>
                 <li>Não compartilhe este código com ninguém</li>
             </ul>
             
@@ -249,7 +252,7 @@ Equipe Merenda Smart Flow
         
         <div class="footer">
             <p>Este é um email automático, não responda.</p>
-            <p>© 2025 Merenda Smart Flow - Sistema de Gestão de Merenda Escolar</p>
+            <p>© 2025 Caminho da Merenda - Sistema de Gestão de Merenda Escolar</p>
         </div>
     </div>
 </body>
