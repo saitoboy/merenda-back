@@ -53,6 +53,13 @@ export const excluir = async (id_usuario: string): Promise<void> => {
     .delete();
 };
 
+// Alterar senha de um usuário
+export const alterarSenha = async (id_usuario: string, nova_senha: string): Promise<void> => {
+  await connection(table)
+    .where({ id_usuario })
+    .update({ senha_usuario: nova_senha });
+};
+
 // Listar todos os usuários
 export const listarTodos = async (): Promise<Usuario[]> => {
   const usuarios = await connection(table)

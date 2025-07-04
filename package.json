@@ -16,14 +16,19 @@
   "dependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^6.4.17",
+    "@types/tunnel": "^0.0.7",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "https-proxy-agent": "^7.0.6",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
+    "nodemailer": "^7.0.4",
     "pg": "^8.16.0",
-    "postgresql": "^0.0.1"
+    "postgresql": "^0.0.1",
+    "tunnel": "^0.0.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

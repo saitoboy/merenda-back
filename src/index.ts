@@ -4,6 +4,7 @@ import cors from "cors";
 import { AddressInfo } from "net";
 import connection from "./connection";
 import { logger } from './utils';
+import { initializeEmailService } from './utils/email-service';
 
 // Importação das rotas
 import authRouter from './routes/auth.routes';
@@ -124,6 +125,15 @@ app.use('/itens', itemRouter);
 logger.debug('Rotas de itens registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
+
+// Inicializar serviço de email
+initializeEmailService()
+  .then(() => {
+    logger.success('Serviço de email inicializado com sucesso', 'email');
+  })
+  .catch((error) => {
+    logger.warning('Falha ao inicializar serviço de email, continuando sem ele', 'email', error);
+  });
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
