@@ -3,14 +3,26 @@ import bcrypt from 'bcrypt';
 import { TipoUsuario } from '../types';
 import logger from './logger';
 
+
+// Interface para dados do token
+interface DadosToken {
+  id_usuario: string;
+  nome_usuario: string;
+  email_usuario: string;
+  tipo: TipoUsuario;
+  id_escola?: string;
+}
+
 // Gerenciamento de tokens JWT
-export const gerarToken = (usuario: { id_usuario: string; email_usuario: string; tipo: TipoUsuario }): string => {
+export const gerarToken = (usuario: DadosToken): string => {
   const secret = process.env.JWT_SECRET || 'merenda-smart-flow-secret';
   const token = jwt.sign(
     {
       id: usuario.id_usuario,
+      nome: usuario.nome_usuario,
       email: usuario.email_usuario,
-      tipo: usuario.tipo
+      tipo: usuario.tipo,
+      ...(usuario.id_escola && { id_escola: usuario.id_escola })
     },
     secret,
     { expiresIn: '12h' }
