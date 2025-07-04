@@ -3,6 +3,7 @@ import * as EscolaModel from '../model/escola.model';
 import * as ItemModel from '../model/item.model';
 import * as SegmentoModel from '../model/segmento.model';
 import * as PeriodoModel from '../model/periodo-lancamento.model';
+import connection from '../connection';
 import { logInfo, logError, logWarning } from '../utils/logger';
 import { 
   Estoque, 
@@ -11,6 +12,141 @@ import {
   FiltroEstoque,
   EstoqueCompleto 
 } from '../types';
+
+// =====================================
+// DUPLICAR ESTOQUES PARA NOVO PERÍODO
+// =====================================
+
+export const duplicarEstoquesParaNovoPeriodo = async (
+  idNovoPeriodo: string,
+  idPeriodoOrigem?: string
+): Promise<{
+  mensagem: string;
+  totalDuplicados: number;
+  periodo_origem: string;
+  periodo_destino: string;
+}> => {
+  const trx = await connection.transaction();
+  
+  try {
+    logInfo(`Iniciando duplicação de estoques para período ${idNovoPeriodo}`, 'service');
+
+    // 1. Verificar se o novo período existe
+    const novoPeriodo = await PeriodoModel.buscarPorId(idNovoPeriodo);
+    if (!novoPeriodo) {
+      throw new Error(`Período de destino não encontrado: ${idNovoPeriodo}`);
+    }
+
+    // 2. Verificar se o novo período já tem estoques
+    const estoquesExistentes = await trx('estoque')
+      .where('id_periodo', idNovoPeriodo)
+      .count('id_estoque as total')
+      .first();
+
+    if (estoquesExistentes && parseInt(estoquesExistentes.total as string) > 0) {
+      logWarning(`Período ${idNovoPeriodo} já possui ${estoquesExistentes.total} itens de estoque. Duplicação cancelada.`, 'service');
+      await trx.rollback();
+      return {
+        mensagem: 'Período já possui estoques. Duplicação não realizada.',
+        totalDuplicados: 0,
+        periodo_origem: idPeriodoOrigem || 'não identificado',
+        periodo_destino: idNovoPeriodo
+      };
+    }
+
+    // 3. Determinar período de origem (se não fornecido, usar o período ativo anterior)
+    let periodoOrigemId = idPeriodoOrigem;
+    if (!periodoOrigemId) {
+      const periodoAtivoAnterior = await trx('periodo_lancamento')
+        .where('ativo', true)
+        .whereNot('id_periodo', idNovoPeriodo)
+        .orderBy('data_referencia', 'desc')
+        .first();
+
+      if (!periodoAtivoAnterior) {
+        logWarning('Nenhum período ativo anterior encontrado para duplicação', 'service');
+        await trx.rollback();
+        return {
+          mensagem: 'Nenhum período anterior encontrado para duplicação.',
+          totalDuplicados: 0,
+          periodo_origem: 'não encontrado',
+          periodo_destino: idNovoPeriodo
+        };
+      }
+      periodoOrigemId = periodoAtivoAnterior.id_periodo;
+    }
+
+    // 4. Verificar se o período de origem existe e tem estoques
+    const periodoOrigem = await PeriodoModel.buscarPorId(periodoOrigemId);
+    if (!periodoOrigem) {
+      throw new Error(`Período de origem não encontrado: ${periodoOrigemId}`);
+    }
+
+    // 5. Buscar estoques do período de origem
+    const estoquesOrigem = await trx('estoque')
+      .where('id_periodo', periodoOrigemId)
+      .select([
+        'id_escola',
+        'id_item', 
+        'id_segmento',
+        'quantidade_item',
+        'numero_ideal',
+        'validade',
+        'observacao'
+      ]);
+
+    if (estoquesOrigem.length === 0) {
+      logWarning(`Período de origem ${periodoOrigemId} não possui estoques para duplicar`, 'service');
+      await trx.rollback();
+      return {
+        mensagem: 'Período de origem não possui estoques para duplicar.',
+        totalDuplicados: 0,
+        periodo_origem: periodoOrigemId,
+        periodo_destino: idNovoPeriodo
+      };
+    }
+
+    logInfo(`Encontrados ${estoquesOrigem.length} itens para duplicar do período ${periodoOrigemId}`, 'service');
+
+    // 6. Preparar dados para inserção em lote
+    const novosEstoques = estoquesOrigem.map(estoque => ({
+      id_escola: estoque.id_escola,
+      id_item: estoque.id_item,
+      id_segmento: estoque.id_segmento,
+      id_periodo: idNovoPeriodo,
+      quantidade_item: estoque.quantidade_item,
+      numero_ideal: estoque.numero_ideal,
+      validade: estoque.validade,
+      observacao: estoque.observacao
+    }));
+
+    // 7. Inserir novos estoques em lote
+    await trx('estoque').insert(novosEstoques);
+
+    // 8. Commit da transação
+    await trx.commit();
+
+    const totalDuplicados = novosEstoques.length;
+    logInfo(`Duplicação concluída: ${totalDuplicados} itens duplicados do período ${periodoOrigemId} para ${idNovoPeriodo}`, 'service');
+
+    return {
+      mensagem: `Estoques duplicados com sucesso: ${totalDuplicados} itens copiados.`,
+      totalDuplicados,
+      periodo_origem: periodoOrigemId,
+      periodo_destino: idNovoPeriodo
+    };
+
+  } catch (error) {
+    await trx.rollback();
+    logError('Erro ao duplicar estoques para novo período', 'service', error);
+    
+    if (error instanceof Error) {
+      throw new Error(`Erro ao duplicar estoques: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao duplicar estoques');
+    }
+  }
+};
 
 // =====================================
 // BUSCAR E LISTAR ESTOQUE

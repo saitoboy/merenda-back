@@ -231,6 +231,32 @@ export interface ResumoDashboardEscola {
   }; // Dados do período ativo atual
 }
 
+// Interface para resultado da duplicação de estoques
+export interface ResultadoDuplicacaoEstoque {
+  mensagem: string;
+  totalDuplicados: number;
+  periodo_origem: string;
+  periodo_destino: string;
+}
+
+// Interface para resposta da ativação de período
+export interface RespostaAtivacaoPeriodo {
+  mensagem: string;
+  periodo: {
+    id: string;
+    mes: number;
+    ano: number;
+    ativo: boolean;
+  };
+  duplicacao_estoques: {
+    realizada: boolean;
+    total_itens?: number;
+    periodo_origem?: string;
+    mensagem?: string;
+    motivo?: string;
+  };
+}
+
 // Interface para resumo de pedidos
 export interface ResumoPedido {
   id_pedido: string;
