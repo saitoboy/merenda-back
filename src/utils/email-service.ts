@@ -1,18 +1,8 @@
 import nodemailer from 'nodemailer';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import tunnel from 'tunnel';
 import { logInfo, logWarning, logError, logDebug } from './logger';
 
 /**
-     this.transporter = nodemailer.createTransporter(config);
-    
-    logDebug('Configuração SMTP carregada', 'email', {
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      user: config.auth.user,
-      from: process.env.SMTP_FROM || 'naoresponda@tec.edu.mg.gov.br'
-    });uração do serviço de email para envio de OTP
+ * Configuração do serviço de email para envio de OTP
  * Suporta SMTP e modo de desenvolvimento (ethereal email)
  */
 
@@ -53,9 +43,7 @@ class EmailService {
       logInfo('Inicializando serviço de email...', 'email');
 
       // Verificar se estamos em desenvolvimento
-      this.isDevelopment = process.env.NODE_ENV === 'development' || 
-                          !process.env.SMTP_HOST || 
-                          process.env.FORCE_DEV_EMAIL === 'true';
+      this.isDevelopment = process.env.NODE_ENV === 'development' || !process.env.SMTP_HOST;
 
       if (this.isDevelopment) {
         await this.setupDevelopmentEmail();
@@ -75,60 +63,28 @@ class EmailService {
   }
 
   /**
-   * Configura email para desenvolvimento (modo simplificado sem SMTP)
+   * Configura email para desenvolvimento (ethereal email)
    */
   private async setupDevelopmentEmail(): Promise<void> {
-    if (process.env.FORCE_DEV_EMAIL === 'true') {
-      logWarning('🔧 Modo desenvolvimento FORÇADO devido a problemas de proxy/SMTP', 'email');
-      logInfo('📧 Emails serão simulados e códigos OTP aparecerão nos logs', 'email');
-      
-      // Criar transporter fake que não faz conexão real
-      this.transporter = {
-        sendMail: async (mailOptions: any) => {
-          logInfo(`📧 EMAIL SIMULADO para: ${mailOptions.to}`, 'email');
-          logInfo(`📧 Assunto: ${mailOptions.subject}`, 'email');
-          if (mailOptions.text && mailOptions.text.includes('código de verificação é:')) {
-            const codigo = mailOptions.text.match(/código de verificação é: (\w+)/)?.[1];
-            if (codigo) {
-              logInfo(`🔑 CÓDIGO OTP GERADO: ${codigo}`, 'email');
-              logInfo(`🔑 Use este código para testar a verificação!`, 'email');
-            }
-          }
-          return { messageId: `fake-${Date.now()}@dev.local` };
-        },
-        verify: async () => true
-      } as any;
-      
-      logDebug('Modo desenvolvimento configurado (sem SMTP real)', 'email');
-      return;
-    }
-    
     logInfo('Configurando email para desenvolvimento (Ethereal Email)', 'email');
     
-    try {
-      // Criar conta de teste do Ethereal Email
-      const testAccount = await nodemailer.createTestAccount();
-      
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-
-      logDebug('Conta de desenvolvimento criada', 'email', {
+    // Criar conta de teste do Ethereal Email
+    const testAccount = await nodemailer.createTestAccount();
+    
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
         user: testAccount.user,
-        smtp: 'smtp.ethereal.email:587'
-      });
-    } catch (error) {
-      logWarning('Falha ao criar conta Ethereal, usando modo simulado', 'email', error);
-      // Fallback para modo simulado
-      process.env.FORCE_DEV_EMAIL = 'true';
-      await this.setupDevelopmentEmail();
-    }
+        pass: testAccount.pass,
+      },
+    });
+
+    logDebug('Conta de desenvolvimento criada', 'email', {
+      user: testAccount.user,
+      smtp: 'smtp.ethereal.email:587'
+    });
   }
 
   /**
@@ -137,64 +93,28 @@ class EmailService {
   private async setupProductionEmail(): Promise<void> {
     logInfo('Configurando email para produção', 'email');
 
-    // Verificar se deve forçar modo desenvolvimento
-    if (process.env.FORCE_DEV_EMAIL === 'true') {
-      logWarning('🔧 Modo desenvolvimento FORÇADO devido a problemas de proxy/SMTP', 'email');
-      logInfo('📧 Emails serão simulados e códigos OTP aparecerão nos logs', 'email');
-      this.isDevelopment = true;
-      await this.setupDevelopmentEmail();
-      return;
-    }
-
-    const port = parseInt(process.env.SMTP_PORT || '587');
-    const isGmail = (process.env.SMTP_HOST || '').includes('gmail.com');
-    
     const config: EmailConfig = {
       host: process.env.SMTP_HOST || '',
-      port: port,
-      secure: isGmail ? port === 465 : process.env.SMTP_SECURE === 'true',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASSWORD || '',
+        pass: process.env.SMTP_PASS || '',
       },
     };
 
     // Validar configuração
     if (!config.host || !config.auth.user || !config.auth.pass) {
-      const missing = [];
-      if (!config.host) missing.push('SMTP_HOST');
-      if (!config.auth.user) missing.push('SMTP_USER');  
-      if (!config.auth.pass) missing.push('SMTP_PASSWORD');
-      
-      throw new Error(`Configuração SMTP incompleta. Variáveis faltando: ${missing.join(', ')}`);
+      throw new Error('Configuração SMTP incompleta. Verifique as variáveis de ambiente.');
     }
 
-    // Configuração simples para Gmail (sem proxy)
-    const transportConfig = {
-      host: config.host,
-      port: config.port,
-      secure: config.secure, // false para 587, true para 465
-      auth: config.auth,
-      
-      // Configurações TLS para Gmail
-      tls: {
-        rejectUnauthorized: false
-      },
-
-      // Timeouts padrão
-      connectionTimeout: 30000, // 30 segundos
-      greetingTimeout: 15000,   // 15 segundos
-      socketTimeout: 30000,     // 30 segundos
-    };
-
-    this.transporter = nodemailer.createTransport(transportConfig);
+    this.transporter = nodemailer.createTransport(config);
     
-    logDebug('Configuração SMTP carregada (sem proxy)', 'email', {
+    logDebug('Configuração SMTP carregada', 'email', {
       host: config.host,
       port: config.port,
       secure: config.secure,
-      user: config.auth.user,
-      isGmail: isGmail
+      user: config.auth.user
     });
   }
 
@@ -207,9 +127,8 @@ class EmailService {
     }
 
     try {
-      logInfo('Verificando conexão com servidor de email...', 'email');
       await this.transporter.verify();
-      logInfo('✅ Conexão com servidor de email verificada com sucesso!', 'email');
+      logInfo('Conexão com servidor de email verificada', 'email');
     } catch (error) {
       logError('Falha ao verificar conexão com servidor de email', 'email', error);
       throw error;
@@ -232,7 +151,7 @@ class EmailService {
       logInfo(`Enviando email para ${emailData.to}`, 'email');
       
       const info = await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || '"Merenda Smart Flow" <naoresponda@tec.edu.mg.gov.br>',
+        from: process.env.SMTP_FROM || '"Merenda Smart Flow" <noreply@merenda.gov.br>',
         to: emailData.to,
         subject: emailData.subject,
         text: emailData.text,

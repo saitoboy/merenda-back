@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as OTPService from '../services/otp.service';
 import { logInfo, logWarning, logError } from '../utils/logger';
+import { EmailSimulator } from './diagnostico.controller';
 
 /**
  * Controller para gerenciamento de OTP (One Time Password)
@@ -29,16 +30,75 @@ export const enviarOTP = async (req: Request, res: Response): Promise<void> => {
 
     logInfo(`Processando envio de OTP para: ${email}`, 'otp-controller');
     
-    // Chamar serviço
-    const resultado = await OTPService.enviarOTP({ email });
-    
-    logInfo(`OTP enviado com sucesso para: ${email}`, 'otp-controller');
-    
-    res.status(200).json({
-      status: 'sucesso',
-      mensagem: resultado.mensagem,
-      dados: resultado.dados_depuracao // Apenas em desenvolvimento
-    });
+    try {
+      // Chamar serviço normal (com email)
+      const resultado = await OTPService.enviarOTP({ email });
+      
+      logInfo(`OTP enviado com sucesso para: ${email}`, 'otp-controller');
+      
+      res.status(200).json({
+        status: 'sucesso',
+        mensagem: resultado.mensagem,
+        dados: resultado.dados_depuracao // Código incluso em desenvolvimento
+      });
+      
+    } catch (emailError) {
+      // Fallback para desenvolvimento quando email não funciona
+      if (process.env.NODE_ENV === 'development') {
+        logWarning('Serviço de email indisponível, usando modo desenvolvimento', 'otp-controller');
+        
+        // Implementar lógica simples sem email (como era no otp-dev)
+        const UsuarioModel = require('../model/usuario.model');
+        const PasswordResetOTPModel = require('../model/password-reset-otp.model');
+        
+        const usuario = await UsuarioModel.buscarPorEmail(email.trim().toLowerCase());
+        if (!usuario) {
+          res.status(400).json({
+            status: 'erro',
+            mensagem: 'Email não encontrado no sistema'
+          });
+          return;
+        }
+
+        // Invalidar OTPs anteriores
+        await PasswordResetOTPModel.invalidarOTPsAtivos(usuario.id_usuario);
+
+        // Gerar código OTP
+        const codigoOTP = Math.floor(100000 + Math.random() * 900000).toString();
+        const dataExpiracao = new Date();
+        dataExpiracao.setMinutes(dataExpiracao.getMinutes() + 15);
+
+        // Salvar OTP no banco
+        await PasswordResetOTPModel.criar({
+          id_usuario: usuario.id_usuario,
+          email_usuario: email.trim().toLowerCase(),
+          codigo_otp: codigoOTP,
+          tentativas: 0,
+          usado: false,
+          data_criacao: new Date(),
+          data_expiracao: dataExpiracao
+        });
+
+        // Simular envio de email para desenvolvimento
+        const emailResult = await EmailSimulator.sendOTP(email.trim().toLowerCase(), codigoOTP);
+
+        logInfo(`OTP gerado para desenvolvimento: ${codigoOTP}`, 'otp-controller');
+        
+        res.status(200).json({
+          status: 'sucesso',
+          mensagem: 'Código OTP gerado (modo desenvolvimento - email indisponível)',
+          dados: {
+            codigo_otp: codigoOTP, // Retorna o código para teste
+            tempo_expiracao: '15 minutos',
+            modo: 'desenvolvimento_sem_email',
+            preview_email: emailResult.preview_url // Link para ver o email simulado
+          }
+        });
+      } else {
+        // Em produção, propagar o erro
+        throw emailError;
+      }
+    }
 
   } catch (error) {
     if (error instanceof Error) {
@@ -195,96 +255,6 @@ export const limparOTPsExpirados = async (req: Request, res: Response): Promise<
       });
     } else {
       logError('Erro interno ao limpar OTPs expirados', 'otp-controller');
-      res.status(500).json({
-        status: 'erro',
-        mensagem: 'Erro interno do servidor'
-      });
-    }
-  }
-};
-
-/**
- * Testar configuração de email (apenas para desenvolvimento/admin)
- * POST /auth/otp/testar-email
- */
-export const testarEmail = async (req: Request, res: Response): Promise<void> => {
-  try {
-    logInfo('Testando configuração de email', 'otp-controller');
-    
-    const { email } = req.body;
-    
-    // Validação básica
-    if (!email) {
-      res.status(400).json({
-        status: 'erro',
-        mensagem: 'Email é obrigatório para teste'
-      });
-      return;
-    }
-
-    // Importar o serviço de email
-    const { sendEmail, isEmailServiceReady, isEmailServiceDev } = require('../utils/email-service');
-    
-    if (!isEmailServiceReady()) {
-      res.status(503).json({
-        status: 'erro',
-        mensagem: 'Serviço de email não está configurado'
-      });
-      return;
-    }
-
-    // Enviar email de teste
-    const resultado = await sendEmail({
-      to: email,
-      subject: 'Teste de Configuração - Merenda Smart Flow',
-      text: 'Este é um email de teste para verificar se a configuração SMTP está funcionando corretamente.',
-      html: `
-        <h2>🧪 Teste de Email</h2>
-        <p>Se você está recebendo este email, significa que a configuração SMTP do Merenda Smart Flow está funcionando corretamente!</p>
-        <p><strong>Modo:</strong> ${isEmailServiceDev() ? 'Desenvolvimento' : 'Produção'}</p>
-        <p><strong>Enviado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-        <hr>
-        <small>Este é um email de teste gerado automaticamente.</small>
-      `
-    });
-
-    if (resultado.success) {
-      logInfo(`Email de teste enviado com sucesso para: ${email}`, 'otp-controller');
-      
-      const resposta: any = {
-        status: 'sucesso',
-        mensagem: 'Email de teste enviado com sucesso',
-        dados: {
-          messageId: resultado.messageId,
-          modo: isEmailServiceDev() ? 'desenvolvimento' : 'producao'
-        }
-      };
-
-      // Se estiver em desenvolvimento, incluir URL de preview
-      if (resultado.previewUrl) {
-        resposta.dados.previewUrl = resultado.previewUrl;
-      }
-
-      res.status(200).json(resposta);
-    } else {
-      logError(`Falha ao enviar email de teste: ${resultado.error}`, 'otp-controller');
-      res.status(500).json({
-        status: 'erro',
-        mensagem: 'Falha ao enviar email de teste',
-        detalhes: resultado.error
-      });
-    }
-
-  } catch (error) {
-    if (error instanceof Error) {
-      logError(`Erro ao testar email: ${error.message}`, 'otp-controller');
-      res.status(500).json({
-        status: 'erro',
-        mensagem: 'Erro interno ao testar email',
-        detalhes: error.message
-      });
-    } else {
-      logError('Erro interno ao testar email', 'otp-controller');
       res.status(500).json({
         status: 'erro',
         mensagem: 'Erro interno do servidor'

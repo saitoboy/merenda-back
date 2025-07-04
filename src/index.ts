@@ -15,6 +15,7 @@ import estoqueRouter from './routes/estoque.routes';
 import fornecedorRouter from './routes/fornecedor.routes';
 import pedidoRouter from './routes/pedido.routes';
 import itemRouter from './routes/item.routes';
+import diagnosticoRouter from './routes/diagnostico.routes';
 
 const app = express();
 
@@ -123,6 +124,9 @@ logger.debug('Rotas de pedidos registradas', 'route');
 
 app.use('/itens', itemRouter);
 logger.debug('Rotas de itens registradas', 'route');
+
+app.use('/diagnostico', diagnosticoRouter);
+logger.debug('Rotas de diagnóstico registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 

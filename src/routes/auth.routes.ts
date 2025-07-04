@@ -42,11 +42,4 @@ authRouter.post('/otp/limpar-expirados',
   OTPController.limparOTPsExpirados
 );
 
-// Testar configuração de email (apenas admin)
-authRouter.post('/otp/testar-email', 
-  autenticar, 
-  autorizarPor([TipoUsuario.ADMIN]), 
-  OTPController.testarEmail
-);
-
 export default authRouter;
