@@ -23,12 +23,9 @@ export const buscarPorMesAno = async (mes: number, ano: number): Promise<Periodo
 
 // Buscar período ativo atual
 export const buscarAtivo = async (): Promise<PeriodoLancamento | undefined> => {
-  const dataAtual = new Date();
   
   const periodo = await connection(table)
     .where({ ativo: true })
-    .andWhere('data_inicio', '<=', dataAtual)
-    .andWhere('data_fim', '>=', dataAtual)
     .first();
   
   return periodo;
