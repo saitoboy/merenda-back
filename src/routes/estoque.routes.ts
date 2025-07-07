@@ -11,6 +11,7 @@ estoqueRouter.get('/escola/:id_escola/segmentos', EstoqueController.listarSegmen
 estoqueRouter.get('/escola/:id_escola/abaixo-ideal', EstoqueController.listarItensAbaixoIdeal);
 estoqueRouter.get('/escola/:id_escola/proximos-validade/:dias', EstoqueController.listarItensProximosValidade);
 estoqueRouter.get('/escola/:id_escola/metricas', EstoqueController.obterMetricas);
+estoqueRouter.get('/escola/:id_escola/consolidado', EstoqueController.consolidadoEstoquePorSegmento);
 
 // Novas rotas para gestão de valores ideais
 estoqueRouter.post('/ideais', 

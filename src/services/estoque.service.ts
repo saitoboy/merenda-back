@@ -644,3 +644,46 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
     }
   }
 };
+
+// Consolidar estoque por segmento e calcular porcentagens
+export const consolidarEstoquePorSegmento = async (idEscola: string) => {
+  // Busca todos os itens detalhados do estoque da escola
+  const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola);
+
+  // Agrupa por segmento e item
+  const consolidado: Record<string, { segmento: string, itens: Record<string, { nome_item: string, quantidade: number }> }> = {};
+  let totalGeral = 0;
+
+  estoque.forEach(item => {
+    const segmento = item.nome_segmento || item.id_segmento;
+    const nome_item = item.nome_item || item.id_item;
+    if (!consolidado[segmento]) {
+      consolidado[segmento] = { segmento, itens: {} };
+    }
+    if (!consolidado[segmento].itens[nome_item]) {
+      consolidado[segmento].itens[nome_item] = { nome_item, quantidade: 0 };
+    }
+    consolidado[segmento].itens[nome_item].quantidade += item.quantidade_item;
+    totalGeral += item.quantidade_item;
+  });
+
+  // Calcula porcentagem por item e segmento
+  const resultado = Object.values(consolidado).map(seg => {
+    const totalSegmento = Object.values(seg.itens).reduce((acc, i) => acc + i.quantidade, 0);
+    return {
+      segmento: seg.segmento,
+      totalSegmento,
+      porcentagemSegmento: totalGeral > 0 ? (totalSegmento / totalGeral) * 100 : 0,
+      itens: Object.values(seg.itens).map(i => ({
+        nome_item: i.nome_item,
+        quantidade: i.quantidade,
+        porcentagem: totalSegmento > 0 ? (i.quantidade / totalSegmento) * 100 : 0
+      }))
+    };
+  });
+
+  return {
+    totalGeral,
+    segmentos: resultado
+  };
+};
