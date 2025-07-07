@@ -687,3 +687,27 @@ export const consolidarEstoquePorSegmento = async (idEscola: string) => {
     segmentos: resultado
   };
 };
+
+// Consolidar estoque geral por escola e calcular porcentagens
+export const consolidarEstoquePorEscola = async () => {
+  // Busca todos os itens detalhados do estoque de todas as escolas
+  const estoque = await connection('estoque')
+    .join('escola', 'estoque.id_escola', '=', 'escola.id_escola')
+    .select('estoque.id_escola', 'escola.nome_escola')
+    .sum('estoque.quantidade_item as total')
+    .groupBy('estoque.id_escola', 'escola.nome_escola');
+
+  const totalGeral = estoque.reduce((acc, escola) => acc + Number(escola.total), 0);
+
+  const escolas = estoque.map(e => ({
+    id_escola: e.id_escola,
+    nome_escola: e.nome_escola,
+    total: Number(e.total),
+    porcentagem: totalGeral > 0 ? (Number(e.total) / totalGeral) * 100 : 0
+  }));
+
+  return {
+    totalGeral,
+    escolas
+  };
+};

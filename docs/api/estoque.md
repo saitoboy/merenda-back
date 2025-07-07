@@ -855,3 +855,110 @@ curl -X PUT http://localhost:3000/estoque/uuid-estoque-1/validade \
 ### Auditoria
 
 Todas as operações de estoque são registradas para fins de auditoria e rastreabilidade.
+
+---
+
+### Consolidado de Estoque por Segmento
+
+Retorna o consolidado de todos os itens do estoque lançados para todos os segmentos de uma escola, incluindo totais e porcentagens para visualização em dashboard.
+
+**URL**: `/estoque/escola/:id_escola/consolidado`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+#### Parâmetros da URL
+- `id_escola`: ID da escola (UUID)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Consolidado de estoque por segmento obtido com sucesso",
+  "dados": {
+    "totalGeral": 1200,
+    "segmentos": [
+      {
+        "segmento": "creche",
+        "totalSegmento": 400,
+        "porcentagemSegmento": 33.3,
+        "itens": [
+          {
+            "nome_item": "ARROZ BRANCO",
+            "quantidade": 100,
+            "porcentagem": 8.3
+          }
+          // ...
+        ]
+      }
+      // ...
+    ]
+  }
+}
+```
+
+#### Observações
+- Se não houver itens lançados, os totais e porcentagens retornam como zero.
+- Útil para dashboards e relatórios gerenciais.
+
+#### Códigos de Erro
+- `401`: Token inválido ou ausente
+- `403`: Usuário sem permissão
+- `404`: Escola não encontrada
+- `500`: Erro interno do servidor
+
+---
+
+### Consolidado Geral de Estoque por Escola
+
+Retorna o consolidado do total de estoque lançado por todas as escolas, incluindo o total geral e a porcentagem de cada escola em relação ao total.
+
+**URL**: `/estoque/consolidado-geral`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Consolidado geral de estoque por escola obtido com sucesso",
+  "dados": {
+    "totalGeral": 1000,
+    "escolas": [
+      {
+        "id_escola": "uuid-escola-1",
+        "nome_escola": "E M CÂNDIDO PORTINARI",
+        "total": 400,
+        "porcentagem": 40
+      },
+      {
+        "id_escola": "uuid-escola-2",
+        "nome_escola": "E M OUTRA ESCOLA",
+        "total": 600,
+        "porcentagem": 60
+      }
+    ]
+  }
+}
+```
+
+#### Observações
+- O total de cada escola é a soma de todos os itens lançados no estoque.
+- A porcentagem indica a participação da escola no total geral.
+- Útil para dashboards de acompanhamento macro (ex: visão do nutricionista).
+
+#### Códigos de Erro
+- `401`: Token inválido ou ausente
+- `403`: Usuário sem permissão
+- `500`: Erro interno do servidor
+
+---

@@ -10,7 +10,8 @@ import {
   obterMetricasEstoque,
   definirIdeaisEmLote,
   atualizarDataValidade as atualizarDataValidadeService,
-  consolidarEstoquePorSegmento
+  consolidarEstoquePorSegmento,
+  consolidarEstoquePorEscola
 } from '../services/estoque.service';
 import { buscarSegmentosPorEscola } from '../model/escola-segmento.model';
 import { logInfo, logError, logWarning } from '../utils/logger';
@@ -511,6 +512,29 @@ export const consolidadoEstoquePorSegmento = async (req: Request, res: Response)
     res.status(200).json({
       status: 'sucesso',
       mensagem: 'Consolidado de estoque por segmento obtido com sucesso',
+      dados: consolidado
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: error.message
+      });
+      return;
+    }
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+export const consolidadoGeralPorEscola = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const consolidado = await consolidarEstoquePorEscola();
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Consolidado geral de estoque por escola obtido com sucesso',
       dados: consolidado
     });
   } catch (error) {
