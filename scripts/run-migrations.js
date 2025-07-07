@@ -129,6 +129,47 @@ class MigrationRunner {
                     `);
                     return parseInt(hasFotoPerfilColumn.rows[0].count) === 0;
                 
+                case '013_create_ramal_table.sql': {
+                    // Verifica se a tabela ramal existe
+                    const ramalTable = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ramal')"
+                    );
+                    if (!ramalTable.rows[0].exists) return true;
+
+                    // Verifica se a coluna ramal_id existe em escola
+                    const ramalIdColumn = await this.pool.query(
+                        "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'escola' AND column_name = 'ramal_id'"
+                    );
+                    if (parseInt(ramalIdColumn.rows[0].count) === 0) return true;
+
+                    // Verifica se todos os ramais necessários existem
+                    const ramaisNecessarios = [
+                        'RAMAL SÃO FRANCISCO',
+                        'RAMAL DORNELAS',
+                        'RAMAL SAFIRA',
+                        'RAMAL BARRA',
+                        'RAMAL PORTO',
+                        'RAMAL DORNELAS/BOA FAMÍLIA',
+                        'RAMAL DORNELAS/PIRAPANEMA',
+                        'RAMAL BARRA/BELISÁRIO',
+                        'RAMAL BARRA/BR116',
+                        'RAMAL SÃO JOÃO DO GLÓRIA'
+                    ];
+                    const ramaisNoBanco = await this.pool.query(
+                        `SELECT nome_ramal FROM ramal WHERE nome_ramal = ANY($1)`, [ramaisNecessarios]
+                    );
+                    if (ramaisNoBanco.rows.length < ramaisNecessarios.length) return true;
+
+                    // Verifica se ainda existe escola sem ramal_id
+                    const escolasSemRamal = await this.pool.query(
+                        "SELECT COUNT(*) FROM escola WHERE ramal_id IS NULL"
+                    );
+                    if (parseInt(escolasSemRamal.rows[0].count) > 0) return true;
+
+                    // Se tudo existe e está associado, não precisa rodar
+                    return false;
+                }
+                
                 default:
                     return true; // Se não souber, tenta executar
             }

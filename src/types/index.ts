@@ -26,6 +26,7 @@ export interface Escola {
   nome_escola: string;
   endereco_escola: string;
   email_escola: string;
+    ramal_id?: string | null; // UUID do ramal associado (pode ser nulo)
 }
 
 // Interface do fornecedor
@@ -299,4 +300,11 @@ export interface ResumoPedido {
   quantidade_pedido: number;
   nome_item: string;
   nome_escola: string;
+}
+
+// Interface de Ramal
+export interface Ramal {
+  id_ramal: string;
+  nome_ramal: string;
+  escolas?: Escola[];
 }

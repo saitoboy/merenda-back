@@ -18,10 +18,11 @@ import itemRouter from './routes/item.routes';
 import diagnosticoRouter from './routes/diagnostico.routes';
 import fotoPerfilRouter from './routes/foto-perfil.routes';
 import usuarioRouter from './routes/usuario.routes';
+import ramalRouter from './routes/ramal.routes';
 
 const app = express();
 
-logger.info('Inicializando Merenda Smart Flow API', 'server');
+logger.info('Inicializando Caminho da Merenda API', 'server');
 
 // Aumentando o limite do tamanho do payload para 10MB
 app.use(express.json({ limit: '10mb' }));
@@ -135,6 +136,9 @@ logger.debug('Rotas de foto de perfil registradas', 'route');
 
 app.use('/usuarios', usuarioRouter);
 logger.debug('Rotas de usuários registradas', 'route');
+
+app.use('/ramais', ramalRouter);
+logger.debug('Rotas de ramais registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 
