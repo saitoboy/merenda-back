@@ -24,13 +24,15 @@ BEGIN
             -- Foreign Key para garantir integridade
             CONSTRAINT fk_password_reset_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE,
             
-            -- Índices para performance
-            CONSTRAINT idx_usuario_otp UNIQUE (id_usuario, codigo_otp),
-            INDEX idx_id_usuario (id_usuario),
-            INDEX idx_email_usuario (email_usuario),
-            INDEX idx_codigo_otp (codigo_otp),
-            INDEX idx_data_expiracao (data_expiracao)
+            -- Índice único para evitar duplicidade
+            CONSTRAINT idx_usuario_otp UNIQUE (id_usuario, codigo_otp)
         );
+
+        -- Índices para performance (criados após a tabela)
+        CREATE INDEX idx_id_usuario ON password_reset_otp (id_usuario);
+        CREATE INDEX idx_email_usuario ON password_reset_otp (email_usuario);
+        CREATE INDEX idx_codigo_otp ON password_reset_otp (codigo_otp);
+        CREATE INDEX idx_data_expiracao ON password_reset_otp (data_expiracao);
         
         -- Comentários descritivos
         COMMENT ON TABLE password_reset_otp IS 'Tabela para armazenar códigos OTP temporários para redefinição de senha';
