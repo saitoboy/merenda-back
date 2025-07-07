@@ -280,27 +280,25 @@ Para alterar a senha, utilize a rota específica de alteração de senha.
 
 ---
 
-## Alterar Senha de Usuário
+# Troca e Redefinição de Senha de Usuário
 
-Permite que o admin altere a senha de qualquer usuário, ou que o próprio usuário altere sua senha.
+## Troca de senha autenticada
+
+Esta rota permite que um usuário autenticado altere sua própria senha, ou que um ADMIN redefina a senha de qualquer usuário.
 
 ### Endpoint
-
 ```
 PUT /usuarios/:id_usuario/senha
 ```
 
 ### Autenticação
-
 - Envie o token JWT no header `Authorization` (Bearer Token).
 
 ### Permissões
-
 - **Admin:** pode alterar a senha de qualquer usuário, sem precisar informar a senha atual.
 - **Usuário comum:** só pode alterar a própria senha e precisa informar a senha atual.
 
 ### Corpo da Requisição
-
 - **Se for admin:**
   ```json
   {
@@ -315,39 +313,62 @@ PUT /usuarios/:id_usuario/senha
   }
   ```
 
-### Exemplo de chamada (fetch)
-
-```javascript
-fetch('http://localhost:3003/usuarios/ID_DO_USUARIO/senha', {
-  method: 'PUT',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer SEU_TOKEN_JWT'
-  },
-  body: JSON.stringify({
-    // Para admin: só nova_senha
-    // Para usuário comum: senha_atual e nova_senha
-    nova_senha: 'novaSenhaSegura123'
-  })
-})
-.then(res => res.json())
-.then(data => console.log(data));
-```
-
 ### Resposta de Sucesso
-
-```json
-{
-  "status": "sucesso",
-  "mensagem": "Senha alterada com sucesso"
-}
-```
+- Para admin:
+  ```json
+  {
+    "status": "sucesso",
+    "mensagem": "Senha redefinida com sucesso"
+  }
+  ```
+- Para usuário comum:
+  ```json
+  {
+    "status": "sucesso",
+    "mensagem": "Senha alterada com sucesso"
+  }
+  ```
 
 ### Respostas de Erro
-
 - 400: Dados inválidos ou senha atual incorreta (para usuário comum)
 - 404: Usuário não encontrado
 - 403: Tentativa de alterar senha de outro usuário sem ser admin
+- 401: Não autenticado
+
+---
+
+## Redefinição de senha via OTP (esqueci minha senha)
+
+Este fluxo é usado quando o usuário esqueceu a senha e não está autenticado. Utiliza código OTP enviado por email.
+
+### Passos do fluxo:
+1. **Solicitar envio de OTP:**
+   - Endpoint: `POST /otp/enviar`
+   - Body: `{ "email": "usuario@dominio.com" }`
+   - O sistema envia um código OTP para o email informado.
+
+2. **Validar OTP e redefinir senha:**
+   - Endpoint: `POST /otp/verificar`
+   - Body:
+     ```json
+     {
+       "email": "usuario@dominio.com",
+       "codigo_otp": "123456",
+       "nova_senha": "novaSenhaSegura123"
+     }
+     ```
+   - Se o código estiver correto e válido, a senha é redefinida.
+
+### Observações
+- O fluxo OTP é totalmente separado da troca de senha autenticada.
+- O admin nunca precisa de OTP para redefinir senha de outro usuário.
+- Usuário autenticado nunca precisa de OTP para trocar sua própria senha.
+
+---
+
+## Resumo
+- **/usuarios/:id_usuario/senha**: troca/redefinição de senha autenticada (admin ou próprio usuário, sem OTP)
+- **/otp/enviar** e **/otp/verificar**: redefinição de senha para quem esqueceu a senha (não autenticado, via OTP)
 
 ---
 

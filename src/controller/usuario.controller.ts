@@ -30,6 +30,7 @@ export const alterarSenhaUsuario = async (req: Request, res: Response): Promise<
       return;
     }
 
+    // Usuário comum precisa informar senha atual, admin não precisa
     if (!isAdmin && !senha_atual) {
       res.status(400).json({ status: 'erro', mensagem: 'Senha atual é obrigatória' });
       return;
@@ -38,11 +39,11 @@ export const alterarSenhaUsuario = async (req: Request, res: Response): Promise<
     await UsuarioService.alterarSenha({
       id_usuario,
       nova_senha,
-      senha_atual,
+      senha_atual: isAdmin ? undefined : senha_atual,
       isAdmin
     });
 
-    res.status(200).json({ status: 'sucesso', mensagem: 'Senha alterada com sucesso' });
+    res.status(200).json({ status: 'sucesso', mensagem: isAdmin ? 'Senha redefinida com sucesso' : 'Senha alterada com sucesso' });
   } catch (error) {
     logger.error(`Erro ao alterar senha: ${error instanceof Error ? error.message : error}`);
     if (error instanceof Error && error.message === 'Usuário não encontrado') {
