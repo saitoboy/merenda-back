@@ -290,11 +290,15 @@ Altera a senha de um usuário existente.
 
 **Autenticação**: Sim (Admin ou o próprio usuário)
 
+**Regras de permissão:**
+- **Admin** pode alterar a senha de qualquer usuário, sem precisar informar a senha atual.
+- **Usuário comum** só pode alterar a própria senha e precisa informar a senha atual.
+
 **Corpo da Requisição**:
 
 ```json
 {
-  "senha_atual": "senha_atual_123",
+  "senha_atual": "senha_atual_123", // obrigatório apenas para usuário comum
   "nova_senha": "nova_senha_segura_456"
 }
 ```
