@@ -16,6 +16,7 @@ import fornecedorRouter from './routes/fornecedor.routes';
 import pedidoRouter from './routes/pedido.routes';
 import itemRouter from './routes/item.routes';
 import diagnosticoRouter from './routes/diagnostico.routes';
+import fotoPerfilRouter from './routes/foto-perfil.routes';
 
 const app = express();
 
@@ -127,6 +128,9 @@ logger.debug('Rotas de itens registradas', 'route');
 
 app.use('/diagnostico', diagnosticoRouter);
 logger.debug('Rotas de diagnóstico registradas', 'route');
+
+app.use('/usuario/foto-perfil', fotoPerfilRouter);
+logger.debug('Rotas de foto de perfil registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 

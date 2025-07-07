@@ -114,6 +114,20 @@ class MigrationRunner {
                         WHERE table_name = 'estoque' AND column_name = 'segmento_estoque'
                     `);
                     return parseInt(hasOldColumn.rows[0].count) > 0;
+
+                case '011_remove_escola_segmento_column.sql':
+                    const hasEscolaSegmentoColumn = await this.pool.query(`
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'escola' AND column_name = 'segmento_escola'
+                    `);
+                    return parseInt(hasEscolaSegmentoColumn.rows[0].count) > 0;
+
+                case '012_add_foto_perfil_usuario.sql':
+                    const hasFotoPerfilColumn = await this.pool.query(`
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'usuario' AND column_name = 'foto_perfil_url'
+                    `);
+                    return parseInt(hasFotoPerfilColumn.rows[0].count) === 0;
                 
                 default:
                     return true; // Se não souber, tenta executar
@@ -127,7 +141,7 @@ class MigrationRunner {
         console.log('🚀 NORMALIZAÇÃO DO BANCO DE DADOS - MERENDA SMART FLOW');
         console.log('='.repeat(60));
         console.log('🎯 Objetivo: Normalizar tabelas escola, estoque e segmentos');
-        console.log('📦 Total de migrations: 11');
+        console.log('📦 Total de migrations: 12');
         console.log('');
 
         try {

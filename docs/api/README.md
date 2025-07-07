@@ -26,7 +26,13 @@
    - Sistema completo de reset de senha
    - Códigos OTP de 6 dígitos
    - Fallback para desenvolvimento
-   - Rate limiting e segurançaMerenda Smart Flow
+   - Rate limiting e segurança
+
+3. **[Foto de Perfil](./foto-perfil.md)** ⭐ *NOVO*
+   - Upload de fotos para Google Drive
+   - Integração via Google Apps Script
+   - Validações de segurança
+   - Gerenciamento completo de imagensMerenda Smart Flow
 
 ## 🎉 Sistema Completamente Refatorado e Atualizado
 

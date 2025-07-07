@@ -1,0 +1,59 @@
+### Arquivo de teste para funcionalidades de foto de perfil
+### Requer autenticação em todas as rotas (exceto status)
+
+@base_url = http://localhost:3003
+@auth_token = Bearer SEU_TOKEN_AQUI
+
+### 1. Testar se o Google Apps Script está funcionando
+GET {{base_url}}/usuario/foto-perfil/status
+Content-Type: application/json
+
+###
+
+### 2. Obter foto de perfil do usuário logado
+GET {{base_url}}/usuario/foto-perfil
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+###
+
+### 3. Upload de foto de perfil (usando base64)
+POST {{base_url}}/usuario/foto-perfil
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+  "fileData": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "fileName": "perfil.png",
+  "mimeType": "image/png"
+}
+
+###
+
+### 4. Remover foto de perfil
+DELETE {{base_url}}/usuario/foto-perfil
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+###
+
+### 5. Obter foto de perfil de outro usuário (admin)
+GET {{base_url}}/usuario/foto-perfil/abc123-def456-ghi789
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+###
+
+### Exemplo de upload com imagem real em base64 (pequena)
+### Para usar: converta uma imagem PNG/JPG para base64 e substitua o campo fileData
+POST {{base_url}}/usuario/foto-perfil
+Authorization: {{auth_token}}
+Content-Type: application/json
+
+{
+  "fileData": "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/wAt",
+  "fileName": "teste-perfil.jpg",
+  "mimeType": "image/jpeg"
+}
+
+###

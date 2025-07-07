@@ -17,6 +17,7 @@ export interface Usuario {
   email_usuario: string;
   senha_usuario: string;
   tipo_usuario: TipoUsuario; // Tipo do usuário (admin, escola, nutricionista, etc.)
+  foto_perfil_url?: string; // URL da foto de perfil no Google Drive
 }
 
 // Interface da escola

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Upload Foto Perfil - Merenda</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .foto { max-width: 200px; border-radius: 10px; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        .result { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍎 Teste Upload Foto Perfil - Merenda</h1>
+        
+        <!-- Login -->
+        <div id="loginSection">
+            <h3>1. Fazer Login</h3>
+            <input type="email" id="email" placeholder="guilherme@edu.muriae.mg.gov.br">
+            <input type="password" id="senha" placeholder="Sua senha">
+            <button onclick="fazerLogin()">Login</button>
+        </div>
+
+        <!-- Upload -->
+        <div id="uploadSection" style="display:none;">
+            <h3>2. Selecionar Foto</h3>
+            <input type="file" id="fotoInput" accept="image/*" onchange="previsualizarFoto()">
+            <br><br>
+            <div id="preview"></div>
+            <button onclick="uploadFoto()">📤 Enviar Foto</button>
+        </div>
+
+        <!-- Resultado -->
+        <div id="resultSection" style="display:none;">
+            <h3>3. Foto no Google Drive</h3>
+            <div id="resultado"></div>
+            <button onclick="buscarFoto()">🔄 Buscar Foto Atual</button>
+            <button onclick="removerFoto()">🗑️ Remover Foto</button>
+        </div>
+
+        <!-- Debug -->
+        <div class="result">
+            <h4>📋 Log:</h4>
+            <pre id="log"></pre>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+        const API_URL = 'http://localhost:3003';
+
+        function log(msg) {
+            document.getElementById('log').innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
+        }
+
+        // 1. Login
+        async function fazerLogin() {
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'sucesso') {
+                    token = result.dados.token;
+                    log('✅ Login realizado com sucesso!');
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('uploadSection').style.display = 'block';
+                } else {
+                    log('❌ Erro no login: ' + result.mensagem);
+                }
+            } catch (error) {
+                log('❌ Erro de conexão: ' + error.message);
+            }
+        }
+
+        // 2. Preview da foto
+        function previsualizarFoto() {
+            const file = document.getElementById('fotoInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview').innerHTML = 
+                        `<img src="${e.target.result}" class="foto"><br>
+                         <strong>Arquivo:</strong> ${file.name}<br>
+                         <strong>Tamanho:</strong> ${(file.size/1024).toFixed(1)} KB<br>
+                         <strong>Tipo:</strong> ${file.type}`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 3. Upload da foto
+        async function uploadFoto() {
+            const file = document.getElementById('fotoInput').files[0];
+            if (!file) {
+                alert('Selecione uma foto primeiro!');
+                return;
+            }
+
+            log('📤 Convertendo foto para base64...');
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1]; // Remove data:image...;base64,
+                
+                try {
+                    log('📤 Enviando para API...');
+                    const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            fileData: base64,
+                            fileName: file.name,
+                            mimeType: file.type
+                        })
+                    });
+
+                    const result = await response.json();
+                    log('📋 Resposta da API: ' + JSON.stringify(result, null, 2));
+
+                    if (result.success) {
+                        log('✅ Upload realizado com sucesso!');
+                        document.getElementById('resultSection').style.display = 'block';
+                        mostrarResultado(result.data);
+                    } else {
+                        log('❌ Erro no upload: ' + result.error);
+                    }
+                } catch (error) {
+                    log('❌ Erro de conexão: ' + error.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 4. Mostrar resultado
+        function mostrarResultado(data) {
+            const html = `
+                <div class="result">
+                    <h4>✅ Foto enviada com sucesso!</h4>
+                    <p><strong>ID do arquivo:</strong> ${data.fileId || 'N/A'}</p>
+                    <p><strong>Nome:</strong> ${data.fileName || 'N/A'}</p>
+                    <p><strong>URL do Google Drive:</strong></p>
+                    <a href="${data.fotoUrl}" target="_blank">${data.fotoUrl}</a>
+                    <br><br>
+                    <img src="${data.fotoUrl}" class="foto" alt="Foto do Google Drive">
+                </div>
+            `;
+            document.getElementById('resultado').innerHTML = html;
+        }
+
+        // 5. Buscar foto atual
+        async function buscarFoto() {
+            try {
+                const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                log('📋 Foto atual: ' + JSON.stringify(result, null, 2));
+                
+                if (result.success && result.data.fotoUrl) {
+                    mostrarResultado(result.data);
+                }
+            } catch (error) {
+                log('❌ Erro ao buscar foto: ' + error.message);
+            }
+        }
+
+        // 6. Remover foto
+        async function removerFoto() {
+            try {
+                const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                log('🗑️ Remoção: ' + JSON.stringify(result, null, 2));
+                
+                if (result.success) {
+                    document.getElementById('resultado').innerHTML = '<p>✅ Foto removida com sucesso!</p>';
+                }
+            } catch (error) {
+                log('❌ Erro ao remover foto: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
