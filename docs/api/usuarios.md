@@ -280,34 +280,61 @@ Para alterar a senha, utilize a rota específica de alteração de senha.
 
 ---
 
-## Alterar Senha
+## Alterar Senha de Usuário
 
-Altera a senha de um usuário existente.
+Permite que o admin altere a senha de qualquer usuário, ou que o próprio usuário altere sua senha.
 
-**URL**: `/usuarios/:id_usuario/senha`
+### Endpoint
 
-**Método**: `PUT`
-
-**Autenticação**: Sim (Admin ou o próprio usuário)
-
-**Regras de permissão:**
-- **Admin** pode alterar a senha de qualquer usuário, sem precisar informar a senha atual.
-- **Usuário comum** só pode alterar a própria senha e precisa informar a senha atual.
-
-**Corpo da Requisição**:
-
-```json
-{
-  "senha_atual": "senha_atual_123", // obrigatório apenas para usuário comum
-  "nova_senha": "nova_senha_segura_456"
-}
+```
+PUT /usuarios/:id_usuario/senha
 ```
 
-Observação: O campo `senha_atual` é obrigatório apenas quando o próprio usuário está alterando sua senha. Administradores podem alterar senhas sem fornecer a senha atual.
+### Autenticação
+
+- Envie o token JWT no header `Authorization` (Bearer Token).
+
+### Permissões
+
+- **Admin:** pode alterar a senha de qualquer usuário, sem precisar informar a senha atual.
+- **Usuário comum:** só pode alterar a própria senha e precisa informar a senha atual.
+
+### Corpo da Requisição
+
+- **Se for admin:**
+  ```json
+  {
+    "nova_senha": "novaSenhaSegura123"
+  }
+  ```
+- **Se for o próprio usuário:**
+  ```json
+  {
+    "senha_atual": "senhaAntiga123",
+    "nova_senha": "novaSenhaSegura123"
+  }
+  ```
+
+### Exemplo de chamada (fetch)
+
+```javascript
+fetch('http://localhost:3003/usuarios/ID_DO_USUARIO/senha', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer SEU_TOKEN_JWT'
+  },
+  body: JSON.stringify({
+    // Para admin: só nova_senha
+    // Para usuário comum: senha_atual e nova_senha
+    nova_senha: 'novaSenhaSegura123'
+  })
+})
+.then(res => res.json())
+.then(data => console.log(data));
+```
 
 ### Resposta de Sucesso
-
-**Código**: `200 OK`
 
 ```json
 {
@@ -318,32 +345,9 @@ Observação: O campo `senha_atual` é obrigatório apenas quando o próprio usu
 
 ### Respostas de Erro
 
-**Código**: `404 NOT FOUND`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Usuário não encontrado"
-}
-```
-
-**Código**: `400 BAD REQUEST`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Senha atual incorreta"
-}
-```
-
-**Código**: `401 UNAUTHORIZED`
-
-```json
-{
-  "status": "erro",
-  "mensagem": "Não autorizado"
-}
-```
+- 400: Dados inválidos ou senha atual incorreta (para usuário comum)
+- 404: Usuário não encontrado
+- 403: Tentativa de alterar senha de outro usuário sem ser admin
 
 ---
 
