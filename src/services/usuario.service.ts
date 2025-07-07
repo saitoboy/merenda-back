@@ -1,6 +1,6 @@
 import * as UsuarioModel from '../model/usuario.model';
 import { compararSenha, criptografarSenha, logger } from '../utils';
-import { TipoUsuario } from '../types';
+import { TipoUsuario, Usuario } from '../types';
 
 interface AlterarSenhaParams {
   id_usuario: string;
@@ -22,4 +22,10 @@ export const alterarSenha = async ({ id_usuario, nova_senha, senha_atual, isAdmi
   const senhaCriptografada = await criptografarSenha(nova_senha);
   await UsuarioModel.alterarSenha(id_usuario, senhaCriptografada);
   logger.info(`Senha alterada para usuário ${id_usuario}`);
+};
+
+export const listarUsuarios = async (): Promise<Omit<Usuario, 'senha_usuario'>[]> => {
+  const usuarios = await UsuarioModel.listarTodos();
+  // Remove o campo senha_usuario de cada usuário
+  return usuarios.map(({ senha_usuario, ...rest }) => rest);
 };

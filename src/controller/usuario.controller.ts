@@ -55,3 +55,19 @@ export const alterarSenhaUsuario = async (req: Request, res: Response): Promise<
     }
   }
 };
+
+// GET /usuarios (apenas ADMIN)
+export const listarUsuarios = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const usuarioAuth = req.usuario;
+    if (!usuarioAuth || usuarioAuth.tipo !== TipoUsuario.ADMIN) {
+      res.status(403).json({ status: 'erro', mensagem: 'Acesso negado' });
+      return;
+    }
+    const usuarios = await UsuarioService.listarUsuarios();
+    res.status(200).json({ status: 'sucesso', mensagem: 'Usuários listados com sucesso', dados: usuarios });
+  } catch (error) {
+    logger.error(`Erro ao listar usuários: ${error instanceof Error ? error.message : error}`);
+    res.status(500).json({ status: 'erro', mensagem: 'Erro ao listar usuários' });
+  }
+};

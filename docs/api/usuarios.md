@@ -4,7 +4,7 @@ Esta seção contém as rotas relacionadas à gestão de usuários no sistema Me
 
 ## Listar Usuários
 
-Retorna todos os usuários cadastrados no sistema.
+Retorna todos os usuários cadastrados no sistema (exceto o campo senha).
 
 **URL**: `/usuarios`
 
@@ -41,7 +41,7 @@ Retorna todos os usuários cadastrados no sistema.
 }
 ```
 
-Observação: A senha nunca é retornada nas consultas.
+> **Observação:** O campo `senha_usuario` nunca é retornado nas consultas.
 
 ---
 
