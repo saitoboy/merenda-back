@@ -68,7 +68,7 @@ export class FotoPerfilService {
       const payload = {
         action: 'upload',
         fileName: uniqueFileName,
-        fileData: fileBase64,
+        base64: fileBase64,  // ✅ Corrigido: fileData → base64
         mimeType: mimeType,
         userId: userId
       };
