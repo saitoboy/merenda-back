@@ -29,3 +29,34 @@ export const listarUsuarios = async (): Promise<Omit<Usuario, 'senha_usuario'>[]
   // Remove o campo senha_usuario de cada usuário
   return usuarios.map(({ senha_usuario, ...rest }) => rest);
 };
+
+export const buscarUsuarioPorId = async (id_usuario: string): Promise<Omit<Usuario, 'senha_usuario'> | null> => {
+  const usuario = await UsuarioModel.buscarPorId(id_usuario);
+  if (!usuario) return null;
+  // Remove o campo senha_usuario
+  const { senha_usuario, ...rest } = usuario;
+  return rest;
+};
+
+export const criarUsuario = async (dados: Omit<Usuario, 'id_usuario'>): Promise<Omit<Usuario, 'senha_usuario'>> => {
+  // Criptografa a senha antes de salvar
+  const senhaCriptografada = await criptografarSenha(dados.senha_usuario);
+  const usuarioParaCriar = { ...dados, senha_usuario: senhaCriptografada };
+  const id_usuario = await UsuarioModel.criar(usuarioParaCriar);
+  const usuarioCriado = await UsuarioModel.buscarPorId(id_usuario);
+  if (!usuarioCriado) throw new Error('Erro ao criar usuário');
+  const { senha_usuario, ...rest } = usuarioCriado;
+  return rest;
+};
+
+export const atualizarUsuario = async (id_usuario: string, dados: Partial<Omit<Usuario, 'id_usuario' | 'senha_usuario'>>): Promise<Omit<Usuario, 'senha_usuario'> | null> => {
+  await UsuarioModel.atualizar(id_usuario, dados);
+  const usuarioAtualizado = await UsuarioModel.buscarPorId(id_usuario);
+  if (!usuarioAtualizado) return null;
+  const { senha_usuario, ...rest } = usuarioAtualizado;
+  return rest;
+};
+
+export const excluirUsuario = async (id_usuario: string): Promise<void> => {
+  await UsuarioModel.excluir(id_usuario);
+};

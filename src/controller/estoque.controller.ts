@@ -511,10 +511,19 @@ export const consolidadoEstoquePorSegmento = async (req: Request, res: Response)
     const consolidado = await consolidarEstoquePorSegmento(id_escola);
     res.status(200).json({
       status: 'sucesso',
-      mensagem: 'Consolidado de estoque por segmento obtido com sucesso',
+      mensagem: consolidado.totalGeral === 0
+        ? 'Nenhum dado de estoque encontrado para o período ativo'
+        : 'Consolidado de estoque por segmento do período ativo obtido com sucesso',
       dados: consolidado
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Nenhum período ativo encontrado') {
+      res.status(404).json({
+        status: 'erro',
+        mensagem: 'Nenhum período ativo encontrado para consolidar o estoque'
+      });
+      return;
+    }
     if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',
