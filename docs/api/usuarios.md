@@ -115,11 +115,11 @@ Atualiza os dados de um usuário existente.
 
 **URL**: `/usuarios/:id_usuario`
 
-**Método**: `PUT`
+**Método**: `PATCH`
 
 **Autenticação**: Sim (Admin ou o próprio usuário)
 
-**Corpo da Requisição**:
+**Corpo da Requisição** (envie apenas os campos que deseja atualizar):
 
 ```json
 {
