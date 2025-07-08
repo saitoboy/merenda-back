@@ -11,6 +11,8 @@ estoqueRouter.get('/escola/:id_escola/segmentos', EstoqueController.listarSegmen
 estoqueRouter.get('/escola/:id_escola/abaixo-ideal', EstoqueController.listarItensAbaixoIdeal);
 estoqueRouter.get('/escola/:id_escola/proximos-validade/:dias', EstoqueController.listarItensProximosValidade);
 estoqueRouter.get('/escola/:id_escola/metricas', EstoqueController.obterMetricas);
+estoqueRouter.get('/escola/:id_escola/consolidado', EstoqueController.consolidadoEstoquePorSegmento);
+estoqueRouter.get('/consolidado-geral', EstoqueController.consolidadoGeralPorEscola);
 
 // Novas rotas para gestão de valores ideais
 estoqueRouter.post('/ideais', 
@@ -32,15 +34,15 @@ estoqueRouter.post('/adicionar',
   EstoqueController.adicionarItemAoEstoque
 );
 
-estoqueRouter.put('/quantidade/:id_escola/:id_item', 
+estoqueRouter.put('/quantidade/:id_estoque', 
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.atualizarQuantidade
 );
 
-estoqueRouter.put('/numero-ideal/:id_escola/:id_item', 
+estoqueRouter.put('/numero-ideal/:id_estoque', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA, TipoUsuario.NUTRICIONISTA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.atualizarNumeroIdeal
 );
 
@@ -51,7 +53,7 @@ estoqueRouter.put('/validade/:id_estoque',
   EstoqueController.atualizarDataValidade
 );
 
-estoqueRouter.delete('/:id_escola/:id_item', 
+estoqueRouter.delete('/:id_estoque', 
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
   EstoqueController.removerItemDoEstoque

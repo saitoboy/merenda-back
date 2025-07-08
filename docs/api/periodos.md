@@ -251,9 +251,11 @@ Adiciona um novo período ao sistema.
 
 ```json
 {
-  "nome_periodo": "2º Semestre 2024",
-  "data_inicio": "2024-07-01",
-  "data_fim": "2024-12-31",
+  "mes": 8,
+  "ano": 2025,
+  "data_inicio": "2025-08-01",
+  "data_fim": "2025-08-31",
+  "data_referencia": "2025-08-15",
   "ativo": false
 }
 ```
@@ -279,7 +281,7 @@ Adiciona um novo período ao sistema.
 ```json
 {
   "status": "erro",
-  "mensagem": "Nome, data de início e data de fim são obrigatórios"
+  "mensagem": "Mês, ano, data de início e data de fim são obrigatórios"
 }
 ```
 
@@ -431,7 +433,7 @@ Remove um período do sistema.
 
 ### Ativar Período
 
-Ativa um período e desativa todos os outros automaticamente.
+Ativa um período e desativa todos os outros automaticamente. **Duplica estoques automaticamente** do período anterior se o período de destino estiver vazio.
 
 **URL**: `/periodos/:id/ativar`
 
@@ -439,14 +441,83 @@ Ativa um período e desativa todos os outros automaticamente.
 
 **Autenticação**: Sim (Admin, Nutricionista)
 
-#### Resposta de Sucesso
+#### Funcionalidades Automáticas
+
+- ✅ **Desativação automática** de outros períodos
+- ✅ **Duplicação inteligente** de estoques (apenas se necessário)
+- ✅ **Prevenção de duplicações** em reativações
+- ✅ **Transações seguras** com rollback automático
+
+#### Resposta de Sucesso - Primeira Ativação (com duplicação)
 
 **Código**: `200 OK`
 
 ```json
 {
   "status": "sucesso",
-  "mensagem": "Período ativado com sucesso. Outros períodos foram desativados."
+  "mensagem": "Período 8/2025 ativado com sucesso",
+  "dados": {
+    "periodo": {
+      "id": "uuid-periodo",
+      "mes": 8,
+      "ano": 2025,
+      "ativo": true
+    },
+    "duplicacao_estoques": {
+      "realizada": true,
+      "total_itens": 2690,
+      "periodo_origem": "uuid-periodo-anterior",
+      "mensagem": "Estoques duplicados com sucesso: 2690 itens copiados."
+    }
+  }
+}
+```
+
+#### Resposta de Sucesso - Reativação (sem duplicação)
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Período 6/2025 ativado com sucesso",
+  "dados": {
+    "periodo": {
+      "id": "uuid-periodo",
+      "mes": 6,
+      "ano": 2025,
+      "ativo": true
+    },
+    "duplicacao_estoques": {
+      "realizada": false,
+      "total_itens": 0,
+      "periodo_origem": "uuid-periodo-anterior",
+      "mensagem": "Período já possui estoques. Duplicação não realizada."
+    }
+  }
+}
+```
+
+#### Resposta de Sucesso - Primeiro período do sistema
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Período 1/2025 ativado com sucesso",
+  "dados": {
+    "periodo": {
+      "id": "uuid-periodo",
+      "mes": 1,
+      "ano": 2025,
+      "ativo": true
+    },
+    "duplicacao_estoques": {
+      "realizada": false,
+      "motivo": "Nenhum período ativo anterior ou erro na duplicação"
+    }
+  }
 }
 ```
 

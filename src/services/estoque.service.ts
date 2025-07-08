@@ -3,6 +3,8 @@ import * as EscolaModel from '../model/escola.model';
 import * as ItemModel from '../model/item.model';
 import * as SegmentoModel from '../model/segmento.model';
 import * as PeriodoModel from '../model/periodo-lancamento.model';
+import connection from '../connection';
+import { logInfo, logError, logWarning } from '../utils/logger';
 import { 
   Estoque, 
   CriarEstoque, 
@@ -10,6 +12,141 @@ import {
   FiltroEstoque,
   EstoqueCompleto 
 } from '../types';
+
+// =====================================
+// DUPLICAR ESTOQUES PARA NOVO PERÍODO
+// =====================================
+
+export const duplicarEstoquesParaNovoPeriodo = async (
+  idNovoPeriodo: string,
+  idPeriodoOrigem?: string
+): Promise<{
+  mensagem: string;
+  totalDuplicados: number;
+  periodo_origem: string;
+  periodo_destino: string;
+}> => {
+  const trx = await connection.transaction();
+  
+  try {
+    logInfo(`Iniciando duplicação de estoques para período ${idNovoPeriodo}`, 'service');
+
+    // 1. Verificar se o novo período existe
+    const novoPeriodo = await PeriodoModel.buscarPorId(idNovoPeriodo);
+    if (!novoPeriodo) {
+      throw new Error(`Período de destino não encontrado: ${idNovoPeriodo}`);
+    }
+
+    // 2. Verificar se o novo período já tem estoques
+    const estoquesExistentes = await trx('estoque')
+      .where('id_periodo', idNovoPeriodo)
+      .count('id_estoque as total')
+      .first();
+
+    if (estoquesExistentes && parseInt(estoquesExistentes.total as string) > 0) {
+      logWarning(`Período ${idNovoPeriodo} já possui ${estoquesExistentes.total} itens de estoque. Duplicação cancelada.`, 'service');
+      await trx.rollback();
+      return {
+        mensagem: 'Período já possui estoques. Duplicação não realizada.',
+        totalDuplicados: 0,
+        periodo_origem: idPeriodoOrigem || 'não identificado',
+        periodo_destino: idNovoPeriodo
+      };
+    }
+
+    // 3. Determinar período de origem (se não fornecido, usar o período ativo anterior)
+    let periodoOrigemId = idPeriodoOrigem;
+    if (!periodoOrigemId) {
+      const periodoAtivoAnterior = await trx('periodo_lancamento')
+        .where('ativo', true)
+        .whereNot('id_periodo', idNovoPeriodo)
+        .orderBy('data_referencia', 'desc')
+        .first();
+
+      if (!periodoAtivoAnterior) {
+        logWarning('Nenhum período ativo anterior encontrado para duplicação', 'service');
+        await trx.rollback();
+        return {
+          mensagem: 'Nenhum período anterior encontrado para duplicação.',
+          totalDuplicados: 0,
+          periodo_origem: 'não encontrado',
+          periodo_destino: idNovoPeriodo
+        };
+      }
+      periodoOrigemId = periodoAtivoAnterior.id_periodo;
+    }
+
+    // 4. Verificar se o período de origem existe e tem estoques
+    const periodoOrigem = await PeriodoModel.buscarPorId(periodoOrigemId);
+    if (!periodoOrigem) {
+      throw new Error(`Período de origem não encontrado: ${periodoOrigemId}`);
+    }
+
+    // 5. Buscar estoques do período de origem
+    const estoquesOrigem = await trx('estoque')
+      .where('id_periodo', periodoOrigemId)
+      .select([
+        'id_escola',
+        'id_item', 
+        'id_segmento',
+        'quantidade_item',
+        'numero_ideal',
+        'validade',
+        'observacao'
+      ]);
+
+    if (estoquesOrigem.length === 0) {
+      logWarning(`Período de origem ${periodoOrigemId} não possui estoques para duplicar`, 'service');
+      await trx.rollback();
+      return {
+        mensagem: 'Período de origem não possui estoques para duplicar.',
+        totalDuplicados: 0,
+        periodo_origem: periodoOrigemId,
+        periodo_destino: idNovoPeriodo
+      };
+    }
+
+    logInfo(`Encontrados ${estoquesOrigem.length} itens para duplicar do período ${periodoOrigemId}`, 'service');
+
+    // 6. Preparar dados para inserção em lote
+    const novosEstoques = estoquesOrigem.map(estoque => ({
+      id_escola: estoque.id_escola,
+      id_item: estoque.id_item,
+      id_segmento: estoque.id_segmento,
+      id_periodo: idNovoPeriodo,
+      quantidade_item: estoque.quantidade_item,
+      numero_ideal: estoque.numero_ideal,
+      validade: estoque.validade,
+      observacao: estoque.observacao
+    }));
+
+    // 7. Inserir novos estoques em lote
+    await trx('estoque').insert(novosEstoques);
+
+    // 8. Commit da transação
+    await trx.commit();
+
+    const totalDuplicados = novosEstoques.length;
+    logInfo(`Duplicação concluída: ${totalDuplicados} itens duplicados do período ${periodoOrigemId} para ${idNovoPeriodo}`, 'service');
+
+    return {
+      mensagem: `Estoques duplicados com sucesso: ${totalDuplicados} itens copiados.`,
+      totalDuplicados,
+      periodo_origem: periodoOrigemId,
+      periodo_destino: idNovoPeriodo
+    };
+
+  } catch (error) {
+    await trx.rollback();
+    logError('Erro ao duplicar estoques para novo período', 'service', error);
+    
+    if (error instanceof Error) {
+      throw new Error(`Erro ao duplicar estoques: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao duplicar estoques');
+    }
+  }
+};
 
 // =====================================
 // BUSCAR E LISTAR ESTOQUE
@@ -435,40 +572,142 @@ export const obterResumoDashboard = async (idEscola: string) => {
 // ATUALIZAR DATA DE VALIDADE (ESCOLA)
 // =====================================
 
-export const atualizarDataValidade = async (idEstoque: string, validade: Date) => {
+export const atualizarDataValidade = async (idEstoque: string, validade: Date | string) => {
   try {
+    logInfo(`Iniciando atualização de validade para estoque: ${idEstoque}`, 'service');
+    
     // Verificar se o item de estoque existe
     const estoqueExistente = await EstoqueModel.buscarPorId(idEstoque);
     if (!estoqueExistente) {
+      logError(`Item de estoque não encontrado: ${idEstoque}`, 'service');
       throw new Error('Item de estoque não encontrado');
     }
 
-    // Validar se a data não é no passado
+    logInfo(`Item encontrado. Validade atual: ${estoqueExistente.validade}`, 'service');
+
+    // Normalizar horário para comparação de datas (zerar horas)
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    validade.setHours(0, 0, 0, 0);
     
-    if (validade < hoje) {
+    // Criar data de validade segura para strings YYYY-MM-DD
+    let dataValidade: Date;
+    if (typeof validade === 'string' && validade.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Para strings YYYY-MM-DD, criar Date com construtor seguro
+      const [ano, mes, dia] = validade.split('-').map(Number);
+      dataValidade = new Date(ano, mes - 1, dia); // mes - 1 porque Date usa base 0
+    } else {
+      dataValidade = new Date(validade);
+    }
+    
+    // Normalizar horário da data de validade
+    dataValidade.setHours(0, 0, 0, 0);
+    
+    logInfo(`Data normalizada: ${dataValidade.toDateString()}, Hoje: ${hoje.toDateString()}`, 'service');
+    
+    // Validar se a data não é no passado
+    if (dataValidade < hoje) {
+      logWarning(`Data no passado rejeitada: ${dataValidade.toDateString()}`, 'service');
       throw new Error('Data de validade não pode ser no passado');
     }
 
+    // Salvar validade anterior para auditoria
+    const validadeAnterior = estoqueExistente.validade;
+
     // Atualizar a data de validade
-    const sucesso = await EstoqueModel.atualizarValidade(idEstoque, validade);
+    const sucesso = await EstoqueModel.atualizarValidade(idEstoque, dataValidade);
     
     if (!sucesso) {
+      logError(`Falha ao atualizar data de validade no banco: ${idEstoque}`, 'service');
       throw new Error('Falha ao atualizar data de validade');
     }
+
+    // Formatação consistente - sempre retornar YYYY-MM-DD
+    const novaValidadeFormatada = dataValidade.getFullYear() + '-' + 
+                                 String(dataValidade.getMonth() + 1).padStart(2, '0') + '-' + 
+                                 String(dataValidade.getDate()).padStart(2, '0');
+
+    logInfo(`Validade atualizada com sucesso: ${idEstoque} -> ${novaValidadeFormatada}`, 'service');
 
     return {
       mensagem: 'Data de validade atualizada com sucesso',
       id_estoque: idEstoque,
-      nova_validade: validade.toISOString().split('T')[0]
+      nova_validade: novaValidadeFormatada,
+      validade_anterior: validadeAnterior,
+      atualizado_em: new Date().toISOString()
     };
   } catch (error) {
+    logError('Erro ao atualizar validade', 'service', error);
     if (error instanceof Error) {
       throw new Error(`Erro ao atualizar data de validade: ${error.message}`);
     } else {
       throw new Error('Erro desconhecido ao atualizar data de validade');
     }
   }
+};
+
+// Consolidar estoque por segmento e calcular porcentagens
+export const consolidarEstoquePorSegmento = async (idEscola: string) => {
+  // Busca todos os itens detalhados do estoque da escola
+  const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola);
+
+  // Agrupa por segmento e item
+  const consolidado: Record<string, { segmento: string, itens: Record<string, { nome_item: string, quantidade: number }> }> = {};
+  let totalGeral = 0;
+
+  estoque.forEach(item => {
+    const segmento = item.nome_segmento || item.id_segmento;
+    const nome_item = item.nome_item || item.id_item;
+    if (!consolidado[segmento]) {
+      consolidado[segmento] = { segmento, itens: {} };
+    }
+    if (!consolidado[segmento].itens[nome_item]) {
+      consolidado[segmento].itens[nome_item] = { nome_item, quantidade: 0 };
+    }
+    consolidado[segmento].itens[nome_item].quantidade += item.quantidade_item;
+    totalGeral += item.quantidade_item;
+  });
+
+  // Calcula porcentagem por item e segmento
+  const resultado = Object.values(consolidado).map(seg => {
+    const totalSegmento = Object.values(seg.itens).reduce((acc, i) => acc + i.quantidade, 0);
+    return {
+      segmento: seg.segmento,
+      totalSegmento,
+      porcentagemSegmento: totalGeral > 0 ? (totalSegmento / totalGeral) * 100 : 0,
+      itens: Object.values(seg.itens).map(i => ({
+        nome_item: i.nome_item,
+        quantidade: i.quantidade,
+        porcentagem: totalSegmento > 0 ? (i.quantidade / totalSegmento) * 100 : 0
+      }))
+    };
+  });
+
+  return {
+    totalGeral,
+    segmentos: resultado
+  };
+};
+
+// Consolidar estoque geral por escola e calcular porcentagens
+export const consolidarEstoquePorEscola = async () => {
+  // Busca todos os itens detalhados do estoque de todas as escolas
+  const estoque = await connection('estoque')
+    .join('escola', 'estoque.id_escola', '=', 'escola.id_escola')
+    .select('estoque.id_escola', 'escola.nome_escola')
+    .sum('estoque.quantidade_item as total')
+    .groupBy('estoque.id_escola', 'escola.nome_escola');
+
+  const totalGeral = estoque.reduce((acc, escola) => acc + Number(escola.total), 0);
+
+  const escolas = estoque.map(e => ({
+    id_escola: e.id_escola,
+    nome_escola: e.nome_escola,
+    total: Number(e.total),
+    porcentagem: totalGeral > 0 ? (Number(e.total) / totalGeral) * 100 : 0
+  }));
+
+  return {
+    totalGeral,
+    escolas
+  };
 };

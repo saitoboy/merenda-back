@@ -1,4 +1,5 @@
 import * as PeriodoLancamentoModel from '../model/periodo-lancamento.model';
+import * as EstoqueService from './estoque.service';
 import { PeriodoLancamento, CriarPeriodoLancamento, AtualizarPeriodoLancamento } from '../types';
 import { logger } from '../utils';
 import { ConstraintViolationError, NotFoundError } from '../utils/logger';
@@ -248,10 +249,69 @@ export const ativarPeriodo = async (id: string) => {
       throw new Error('Não é possível ativar um período que já expirou');
     }
 
+    // Buscar período atualmente ativo (se houver) antes de ativar o novo
+    const periodoAtivoAtual = await PeriodoLancamentoModel.listarAtivos();
+    let periodoAtivoAnterior = periodoAtivoAtual.find(p => p.id_periodo !== id);
+
+    // Se não há período ativo, buscar o período mais recente (que pode estar desativado)
+    if (!periodoAtivoAnterior) {
+      logger.info('Nenhum período ativo encontrado. Buscando período mais recente para duplicação.', 'periodo');
+      const todosOsPeriodos = await PeriodoLancamentoModel.listarTodos();
+      periodoAtivoAnterior = todosOsPeriodos.find(p => p.id_periodo !== id);
+      
+      if (periodoAtivoAnterior) {
+        logger.info(`Período mais recente encontrado: ${periodoAtivoAnterior.mes}/${periodoAtivoAnterior.ano}`, 'periodo');
+      }
+    }
+
+    // Ativar o novo período (isso automaticamente desativa os outros)
     await PeriodoLancamentoModel.ativar(id);
     
+    let resultadoDuplicacao = null;
+    
+    // Verificar se precisa duplicar estoques
+    if (periodoAtivoAnterior) {
+      try {
+        logger.info(`Iniciando duplicação de estoques do período ${periodoAtivoAnterior.id_periodo} para ${id}`, 'periodo');
+        resultadoDuplicacao = await EstoqueService.duplicarEstoquesParaNovoPeriodo(id, periodoAtivoAnterior.id_periodo);
+        logger.success(`Duplicação concluída: ${resultadoDuplicacao.totalDuplicados} itens`, 'periodo');
+      } catch (duplicacaoError) {
+        // Log do erro de duplicação, mas não falha a ativação do período
+        logger.error(`Erro na duplicação de estoques: ${duplicacaoError instanceof Error ? duplicacaoError.message : 'Erro desconhecido'}`, 'periodo');
+        // Continua com a ativação mesmo se a duplicação falhar
+      }
+    } else {
+      logger.info('Nenhum período ativo anterior encontrado. Ativação sem duplicação de estoques.', 'periodo');
+    }
+    
     logger.success(`Período ${periodo.mes}/${periodo.ano} ativado com sucesso`, 'periodo');
-    return { mensagem: `Período ${periodo.mes}/${periodo.ano} ativado com sucesso` };
+    
+    // Retornar resposta completa incluindo informações da duplicação
+    const resposta: any = { 
+      mensagem: `Período ${periodo.mes}/${periodo.ano} ativado com sucesso`,
+      periodo: {
+        id: periodo.id_periodo,
+        mes: periodo.mes,
+        ano: periodo.ano,
+        ativo: true
+      }
+    };
+
+    if (resultadoDuplicacao) {
+      resposta.duplicacao_estoques = {
+        realizada: resultadoDuplicacao.totalDuplicados > 0,
+        total_itens: resultadoDuplicacao.totalDuplicados,
+        periodo_origem: resultadoDuplicacao.periodo_origem,
+        mensagem: resultadoDuplicacao.mensagem
+      };
+    } else {
+      resposta.duplicacao_estoques = {
+        realizada: false,
+        motivo: 'Nenhum período ativo anterior ou erro na duplicação'
+      };
+    }
+
+    return resposta;
   } catch (error) {
     if (error instanceof Error) {
       logger.error(`Erro ao ativar período: ${error.message}`, 'periodo');

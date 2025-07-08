@@ -153,6 +153,12 @@ export const criarPeriodo = async (req: Request, res: Response): Promise<void> =
     if (typeof dadosPeriodo.data_fim === 'string') {
       dadosPeriodo.data_fim = new Date(dadosPeriodo.data_fim);
     }
+    if (typeof dadosPeriodo.data_referencia === 'string') {
+      dadosPeriodo.data_referencia = new Date(dadosPeriodo.data_referencia);
+    }
+    
+    // Adicionar o ID do usuário autenticado como criado_por
+    dadosPeriodo.criado_por = req.usuario?.id;
     
     const resultado = await PeriodoLancamentoService.criarPeriodo(dadosPeriodo);
     
@@ -261,7 +267,11 @@ export const ativarPeriodo = async (req: Request, res: Response): Promise<void> 
     
     res.status(200).json({
       status: 'sucesso',
-      mensagem: resultado.mensagem
+      mensagem: resultado.mensagem,
+      dados: {
+        periodo: resultado.periodo,
+        duplicacao_estoques: resultado.duplicacao_estoques
+      }
     });
   } catch (error) {
     if (error instanceof Error) {

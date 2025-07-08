@@ -17,6 +17,7 @@ export interface Usuario {
   email_usuario: string;
   senha_usuario: string;
   tipo_usuario: TipoUsuario; // Tipo do usuário (admin, escola, nutricionista, etc.)
+  foto_perfil_url?: string; // URL da foto de perfil no Google Drive
 }
 
 // Interface da escola
@@ -25,6 +26,7 @@ export interface Escola {
   nome_escola: string;
   endereco_escola: string;
   email_escola: string;
+    ramal_id?: string | null; // UUID do ramal associado (pode ser nulo)
 }
 
 // Interface do fornecedor
@@ -183,6 +185,40 @@ export interface PeriodoLancamentoCompleto extends PeriodoLancamento {
   total_itens_estoque?: number;
 }
 
+// Interface para redefinição de senha com OTP
+export interface PasswordResetOTP {
+  id_otp: string; // UUID
+  id_usuario: string; // UUID - referência ao usuário
+  email_usuario: string; // Email (para logs e verificações)
+  codigo_otp: string; // Código de 6 dígitos
+  tentativas: number; // Contador de tentativas
+  usado: boolean; // Se já foi usado
+  data_criacao: Date;
+  data_expiracao: Date;
+}
+
+// Interface para dados de envio de OTP
+export interface EnviarOTPRequest {
+  email: string;
+}
+
+// Interface para dados de verificação de OTP
+export interface VerificarOTPRequest {
+  email: string;
+  codigo_otp: string;
+  nova_senha: string;
+}
+
+// Interface para resposta de envio de OTP
+export interface EnviarOTPResponse {
+  mensagem: string;
+  dados_depuracao?: {
+    codigo_gerado?: string; // Apenas para desenvolvimento
+    tempo_expiracao?: string;
+    email_valido?: boolean;
+  };
+}
+
 // Enum para status de resposta da API
 export enum StatusResposta {
   SUCESSO = 'sucesso',
@@ -231,6 +267,32 @@ export interface ResumoDashboardEscola {
   }; // Dados do período ativo atual
 }
 
+// Interface para resultado da duplicação de estoques
+export interface ResultadoDuplicacaoEstoque {
+  mensagem: string;
+  totalDuplicados: number;
+  periodo_origem: string;
+  periodo_destino: string;
+}
+
+// Interface para resposta da ativação de período
+export interface RespostaAtivacaoPeriodo {
+  mensagem: string;
+  periodo: {
+    id: string;
+    mes: number;
+    ano: number;
+    ativo: boolean;
+  };
+  duplicacao_estoques: {
+    realizada: boolean;
+    total_itens?: number;
+    periodo_origem?: string;
+    mensagem?: string;
+    motivo?: string;
+  };
+}
+
 // Interface para resumo de pedidos
 export interface ResumoPedido {
   id_pedido: string;
@@ -238,4 +300,26 @@ export interface ResumoPedido {
   quantidade_pedido: number;
   nome_item: string;
   nome_escola: string;
+}
+
+// Interface de Ramal
+export interface Ramal {
+  id_ramal: string;
+  nome_ramal: string;
+  escolas?: Escola[];
+}
+
+// --- Foto de Perfil (WordPress) ---
+export interface UploadFotoResponse {
+  success: boolean;
+  fileId?: string;
+  fileName?: string;
+  fotoUrl?: string;
+  error?: string;
+}
+
+export interface RemoveFotoResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
 }

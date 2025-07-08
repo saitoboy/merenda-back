@@ -26,17 +26,14 @@ export const login = async (email: string, senha: string) => {
     
     logger.debug(`Senha correta, gerando token JWT`, 'auth');
     
-    // Preparar payload do token
-    const tokenPayload: any = {
+    // Preparar payload do token com todos os dados necessários
+    const tokenPayload = {
       id_usuario: usuario.id_usuario,
+      nome_usuario: usuario.nome_usuario,
       email_usuario: usuario.email_usuario,
-      tipo: usuario.tipo_usuario
+      tipo: usuario.tipo_usuario,
+      ...(usuario.id_escola && { id_escola: usuario.id_escola })
     };
-    
-    // Incluir id_escola no token se aplicável
-    if (usuario.tipo_usuario === TipoUsuario.ESCOLA && usuario.id_escola) {
-      tokenPayload.id_escola = usuario.id_escola;
-    }
     
     // Gerar token JWT
     const token = gerarToken(tokenPayload);
@@ -44,18 +41,13 @@ export const login = async (email: string, senha: string) => {
     logger.success(`Login bem-sucedido: ${email} (${usuario.tipo_usuario})`, 'auth');
     
     // Preparar dados do usuário para resposta
-    const dadosUsuario: any = {
+    const dadosUsuario = {
       id: usuario.id_usuario,
       nome: usuario.nome_usuario,
       email: usuario.email_usuario,
-      tipo: usuario.tipo_usuario
+      tipo: usuario.tipo_usuario,
+      ...(usuario.id_escola && { id_escola: usuario.id_escola }),
     };
-    
-    // Incluir id_escola se o usuário for do tipo escola
-    if (usuario.tipo_usuario === TipoUsuario.ESCOLA && usuario.id_escola) {
-      dadosUsuario.id_escola = usuario.id_escola;
-      logger.debug(`Incluindo id_escola no token: ${usuario.id_escola}`, 'auth');
-    }
     
     // Retornar token e dados básicos do usuário
     return {
@@ -121,17 +113,13 @@ export const registrar = async (dados: any) => {
     logger.success(`Usuário registrado com sucesso: ${dados.email_usuario} (${dados.tipo_usuario})`, 'auth');
     
     // Preparar dados de resposta
-    const dadosResposta: any = {
+    const dadosResposta = {
       id,
       nome: dados.nome_usuario,
       email: dados.email_usuario,
-      tipo: dados.tipo_usuario
+      tipo: dados.tipo_usuario,
+      ...(dados.id_escola && { id_escola: dados.id_escola })
     };
-    
-    // Incluir id_escola se aplicável
-    if (dados.tipo_usuario === TipoUsuario.ESCOLA && dados.id_escola) {
-      dadosResposta.id_escola = dados.id_escola;
-    }
     
     return dadosResposta;
   } catch (error) {

@@ -114,6 +114,61 @@ class MigrationRunner {
                         WHERE table_name = 'estoque' AND column_name = 'segmento_estoque'
                     `);
                     return parseInt(hasOldColumn.rows[0].count) > 0;
+
+                case '011_remove_escola_segmento_column.sql':
+                    const hasEscolaSegmentoColumn = await this.pool.query(`
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'escola' AND column_name = 'segmento_escola'
+                    `);
+                    return parseInt(hasEscolaSegmentoColumn.rows[0].count) > 0;
+
+                case '012_add_foto_perfil_usuario.sql':
+                    const hasFotoPerfilColumn = await this.pool.query(`
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'usuario' AND column_name = 'foto_perfil_url'
+                    `);
+                    return parseInt(hasFotoPerfilColumn.rows[0].count) === 0;
+                
+                case '013_create_ramal_table.sql': {
+                    // Verifica se a tabela ramal existe
+                    const ramalTable = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ramal')"
+                    );
+                    if (!ramalTable.rows[0].exists) return true;
+
+                    // Verifica se a coluna ramal_id existe em escola
+                    const ramalIdColumn = await this.pool.query(
+                        "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'escola' AND column_name = 'ramal_id'"
+                    );
+                    if (parseInt(ramalIdColumn.rows[0].count) === 0) return true;
+
+                    // Verifica se todos os ramais necessários existem
+                    const ramaisNecessarios = [
+                        'RAMAL SÃO FRANCISCO',
+                        'RAMAL DORNELAS',
+                        'RAMAL SAFIRA',
+                        'RAMAL BARRA',
+                        'RAMAL PORTO',
+                        'RAMAL DORNELAS/BOA FAMÍLIA',
+                        'RAMAL DORNELAS/PIRAPANEMA',
+                        'RAMAL BARRA/BELISÁRIO',
+                        'RAMAL BARRA/BR116',
+                        'RAMAL SÃO JOÃO DO GLÓRIA'
+                    ];
+                    const ramaisNoBanco = await this.pool.query(
+                        `SELECT nome_ramal FROM ramal WHERE nome_ramal = ANY($1)`, [ramaisNecessarios]
+                    );
+                    if (ramaisNoBanco.rows.length < ramaisNecessarios.length) return true;
+
+                    // Verifica se ainda existe escola sem ramal_id
+                    const escolasSemRamal = await this.pool.query(
+                        "SELECT COUNT(*) FROM escola WHERE ramal_id IS NULL"
+                    );
+                    if (parseInt(escolasSemRamal.rows[0].count) > 0) return true;
+
+                    // Se tudo existe e está associado, não precisa rodar
+                    return false;
+                }
                 
                 default:
                     return true; // Se não souber, tenta executar
@@ -127,7 +182,7 @@ class MigrationRunner {
         console.log('🚀 NORMALIZAÇÃO DO BANCO DE DADOS - MERENDA SMART FLOW');
         console.log('='.repeat(60));
         console.log('🎯 Objetivo: Normalizar tabelas escola, estoque e segmentos');
-        console.log('📦 Total de migrations: 11');
+        console.log('📦 Total de migrations: 12');
         console.log('');
 
         try {

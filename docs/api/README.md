@@ -1,4 +1,38 @@
-# 📖 Documentação da API Merenda Smart Flow
+# 📖 Documentação d### 🔐 Autenticação e Segurança
+
+1. **[Autenticação](./autenticaca### 🛠️ Ferramentas e Utilitários
+
+10. **[Importação de Dados](./importacao.md)**
+    - Importação em massa de dados
+    - Validações e tratamento de erros
+    - Formatos aceitos
+
+11. **[Sistema de Diagnóstico](../sistema-diagnostico-completo.md)** ⭐ *NOVO*
+    - Diagnóstico completo do sistema
+    - Simulador de emails integrado
+    - Testes de OTP sem dependências
+    - Evidências visuais de funcionamento
+
+12. **[Rotas de Teste](./rotas_teste.md)**
+    - Endpoints para desenvolvimento
+    - Health checks
+    - Simulação de erros
+
+13. **[Solução de Problemas](./troubleshooting.md)** Login e Registro
+   - Tokens JWT
+   - Verificação de Permissões
+
+2. **[Redefinição de Senha OTP](./redefinicao-senha-otp.md)** ⭐ *NOVO*
+   - Sistema completo de reset de senha
+   - Códigos OTP de 6 dígitos
+   - Fallback para desenvolvimento
+   - Rate limiting e segurança
+
+3. **[Foto de Perfil](./foto-perfil.md)** ⭐ *NOVO*
+   - Upload de fotos para Google Drive
+   - Integração via Google Apps Script
+   - Validações de segurança
+   - Gerenciamento completo de imagensMerenda Smart Flow
 
 ## 🎉 Sistema Completamente Refatorado e Atualizado
 

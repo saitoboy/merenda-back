@@ -4,6 +4,7 @@ import cors from "cors";
 import { AddressInfo } from "net";
 import connection from "./connection";
 import { logger } from './utils';
+import { initializeEmailService } from './utils/email-service';
 
 // Importação das rotas
 import authRouter from './routes/auth.routes';
@@ -14,10 +15,14 @@ import estoqueRouter from './routes/estoque.routes';
 import fornecedorRouter from './routes/fornecedor.routes';
 import pedidoRouter from './routes/pedido.routes';
 import itemRouter from './routes/item.routes';
+import diagnosticoRouter from './routes/diagnostico.routes';
+import fotoPerfilRouter from './routes/foto-perfil.routes';
+import usuarioRouter from './routes/usuario.routes';
+import ramalRouter from './routes/ramal.routes';
 
 const app = express();
 
-logger.info('Inicializando Merenda Smart Flow API', 'server');
+logger.info('Inicializando Caminho da Merenda API', 'server');
 
 // Aumentando o limite do tamanho do payload para 10MB
 app.use(express.json({ limit: '10mb' }));
@@ -123,7 +128,28 @@ logger.debug('Rotas de pedidos registradas', 'route');
 app.use('/itens', itemRouter);
 logger.debug('Rotas de itens registradas', 'route');
 
+app.use('/diagnostico', diagnosticoRouter);
+logger.debug('Rotas de diagnóstico registradas', 'route');
+
+app.use('/usuario/foto-perfil', fotoPerfilRouter);
+logger.debug('Rotas de foto de perfil registradas', 'route');
+
+app.use('/usuarios', usuarioRouter);
+logger.debug('Rotas de usuários registradas', 'route');
+
+app.use('/ramais', ramalRouter);
+logger.debug('Rotas de ramais registradas', 'route');
+
 logger.success('Todas as rotas registradas com sucesso!', 'route');
+
+// Inicializar serviço de email
+initializeEmailService()
+  .then(() => {
+    logger.success('Serviço de email inicializado com sucesso', 'email');
+  })
+  .catch((error) => {
+    logger.warning('Falha ao inicializar serviço de email, continuando sem ele', 'email', error);
+  });
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {

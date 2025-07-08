@@ -8,8 +8,10 @@ declare global {
     interface Request {
       usuario?: {
         id: string;
+        nome: string;
         email: string;
         tipo: TipoUsuario;
+        id_escola?: string;
       };
     }
   }
@@ -41,8 +43,10 @@ export const autenticar = (req: Request, res: Response, next: NextFunction): voi
     const usuarioDecodificado = verificarToken(token);
     req.usuario = {
       id: usuarioDecodificado.id,
+      nome: usuarioDecodificado.nome,
       email: usuarioDecodificado.email,
-      tipo: usuarioDecodificado.tipo
+      tipo: usuarioDecodificado.tipo,
+      ...(usuarioDecodificado.id_escola && { id_escola: usuarioDecodificado.id_escola })
     };
     
     next();

@@ -259,6 +259,108 @@ Remove um item específico do estoque.
 
 ---
 
+### Atualizar Data de Validade
+
+Atualiza especificamente a data de validade de um item do estoque.
+
+**URL**: `/estoque/:id/validade`
+
+**Método**: `PUT`
+
+**Autenticação**: Requerida
+
+**Permissões**: Admin, Nutricionista, Gestor Escolar (apenas da própria escola)
+
+#### Parâmetros da URL
+
+- `id`: ID do estoque (UUID)
+
+#### Corpo da Requisição
+
+```json
+{
+  "validade": "2025-12-31"
+}
+```
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Data de validade atualizada com sucesso",
+  "dados": {
+    "id_estoque": "uuid-estoque-1",
+    "nova_validade": "2025-12-31",
+    "validade_anterior": "2024-12-31",
+    "atualizado_em": "2025-07-02T10:30:00.000Z"
+  }
+}
+```
+
+#### Validações Aplicadas
+
+- ✅ **Item existe**: Verifica se o item de estoque existe
+- ✅ **Data válida**: Impede datas no passado
+- ✅ **Formato de data**: Aceita formato `YYYY-MM-DD` ou ISO string
+- ✅ **Normalização de fuso horário**: Corrige automaticamente problemas de timezone
+- ✅ **Persistência exata**: Data salva exatamente como enviada na requisição
+
+#### Tratamento de Fuso Horário
+
+⚠️ **Problema Corrigido**: Versões anteriores podiam salvar datas com um dia de diferença devido à conversão automática de fuso horário.
+
+✅ **Solução Implementada**: 
+- Normalização automática da data para formato local
+- Formatação manual evitando conversões UTC
+- Data persistida exatamente como enviada na requisição
+
+#### Códigos de Erro
+
+- `400`: Data de validade inválida ou no passado
+- `404`: Item de estoque não encontrado
+- `403`: Usuário sem permissão para atualizar validade deste estoque
+
+#### Exemplo de Erro - Data no Passado
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Data de validade não pode ser no passado",
+  "codigo": "INVALID_DATE",
+  "detalhes": {
+    "data_informada": "2024-01-01",
+    "data_atual": "2025-07-02"
+  }
+}
+```
+
+#### Exemplo de Erro - Item Não Encontrado
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Item de estoque não encontrado",
+  "codigo": "NOT_FOUND"
+}
+```
+
+#### Teste de Validação - Fuso Horário
+
+```bash
+# Teste: Enviar data específica e verificar se é salva corretamente
+curl -X PUT "http://localhost:3000/estoque/uuid-item/validade" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer token" \
+  -d '{"validade": "2025-07-03"}'
+
+# Resultado esperado: Data salva como "2025-07-03" (não "2025-07-02")
+```
+
+---
+
 ## 📊 Consultas Avançadas
 
 ### Estoque por Escola e Segmento
@@ -668,6 +770,7 @@ Retorna métricas consolidadas para dashboard de uma escola específica.
 | `GET /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `POST /estoque` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `PUT /estoque/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
+| `PUT /estoque/:id/validade` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `DELETE /estoque/:id` | ✅ | ✅ | ❌ | ❌ |
 | `GET /estoque/escola/:id/segmento/:id` | ✅ | ✅ | ✅ (própria escola) | ❌ |
 | `GET /estoque/alertas` | ✅ | ✅ | ✅ (própria escola) | ❌ |
@@ -711,6 +814,151 @@ O sistema gera alertas automáticos baseados em:
 - Dias para vencimento (padrão: < 30 dias = atenção)
 - Configurações personalizáveis por escola/segmento
 
+### Atualização de Validade
+
+A funcionalidade de atualização de validade permite:
+- **Atualização específica**: Altera apenas a data de validade sem afetar outros campos
+- **Validação rigorosa**: Impede datas no passado para manter integridade
+- **Correção de fuso horário**: Resolve automaticamente problemas de timezone
+- **Persistência exata**: Data salva exatamente como enviada (ex: "2025-07-03" → "2025-07-03")
+- **Auditoria**: Registra validade anterior e nova para rastreabilidade
+- **Permissões granulares**: Gestores escolares podem atualizar apenas da própria escola
+
+#### Problema de Fuso Horário Resolvido
+
+**Issue anterior**: Datas enviadas como `"2025-07-03"` eram salvas como `"2025-07-02"` devido à conversão UTC.
+
+**Correção aplicada**:
+- Formatação manual da data evitando `toISOString()`
+- Normalização de horário para comparação local
+- Criação segura de objetos Date para strings YYYY-MM-DD
+
+#### Exemplos Práticos de Uso
+
+```bash
+# Atualizar validade de um item de estoque
+curl -X PUT http://localhost:3000/estoque/uuid-estoque-1/validade \
+  -H "Authorization: Bearer token" \
+  -H "Content-Type: application/json" \
+  -d '{"validade": "2025-12-31"}'
+
+# Resultado: Data salva exatamente como "2025-12-31"
+```
+
+**Casos de Uso Comuns:**
+- ✅ Correção de erro de digitação na validade
+- ✅ Atualização após reembalagem de produtos
+- ✅ Extensão de prazo por análise técnica
+- ✅ Ajuste após verificação física do estoque
+- ✅ Correção de problemas de fuso horário em dados migrados
+
 ### Auditoria
 
 Todas as operações de estoque são registradas para fins de auditoria e rastreabilidade.
+
+---
+
+### Consolidado de Estoque por Segmento
+
+Retorna o consolidado de todos os itens do estoque lançados para todos os segmentos de uma escola, incluindo totais e porcentagens para visualização em dashboard.
+
+**URL**: `/estoque/escola/:id_escola/consolidado`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+#### Parâmetros da URL
+- `id_escola`: ID da escola (UUID)
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Consolidado de estoque por segmento obtido com sucesso",
+  "dados": {
+    "totalGeral": 1200,
+    "segmentos": [
+      {
+        "segmento": "creche",
+        "totalSegmento": 400,
+        "porcentagemSegmento": 33.3,
+        "itens": [
+          {
+            "nome_item": "ARROZ BRANCO",
+            "quantidade": 100,
+            "porcentagem": 8.3
+          }
+          // ...
+        ]
+      }
+      // ...
+    ]
+  }
+}
+```
+
+#### Observações
+- Se não houver itens lançados, os totais e porcentagens retornam como zero.
+- Útil para dashboards e relatórios gerenciais.
+
+#### Códigos de Erro
+- `401`: Token inválido ou ausente
+- `403`: Usuário sem permissão
+- `404`: Escola não encontrada
+- `500`: Erro interno do servidor
+
+---
+
+### Consolidado Geral de Estoque por Escola
+
+Retorna o consolidado do total de estoque lançado por todas as escolas, incluindo o total geral e a porcentagem de cada escola em relação ao total.
+
+**URL**: `/estoque/consolidado-geral`
+
+**Método**: `GET`
+
+**Autenticação**: Requerida
+
+#### Resposta de Sucesso
+
+**Código**: `200 OK`
+
+```json
+{
+  "status": "sucesso",
+  "mensagem": "Consolidado geral de estoque por escola obtido com sucesso",
+  "dados": {
+    "totalGeral": 1000,
+    "escolas": [
+      {
+        "id_escola": "uuid-escola-1",
+        "nome_escola": "E M CÂNDIDO PORTINARI",
+        "total": 400,
+        "porcentagem": 40
+      },
+      {
+        "id_escola": "uuid-escola-2",
+        "nome_escola": "E M OUTRA ESCOLA",
+        "total": 600,
+        "porcentagem": 60
+      }
+    ]
+  }
+}
+```
+
+#### Observações
+- O total de cada escola é a soma de todos os itens lançados no estoque.
+- A porcentagem indica a participação da escola no total geral.
+- Útil para dashboards de acompanhamento macro (ex: visão do nutricionista).
+
+#### Códigos de Erro
+- `401`: Token inválido ou ausente
+- `403`: Usuário sem permissão
+- `500`: Erro interno do servidor
+
+---
