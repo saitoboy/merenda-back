@@ -30,7 +30,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Configuração detalhada do CORS
 app.use(cors({
   origin: '*', // Permite todas as origens em ambiente de desenvolvimento
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 logger.success('Middlewares básicos configurados', 'server');
