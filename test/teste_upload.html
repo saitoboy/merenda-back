@@ -1,198 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Teste Upload Foto Perfil - Merenda</title>
+    <meta charset="UTF-8">
+    <title>Teste Upload Foto Perfil - Merenda (WordPress)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .foto { max-width: 200px; border-radius: 10px; }
-        button { padding: 10px 20px; margin: 10px 0; }
-        .result { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        body { background: #f8fafc; }
+        .foto { max-width: 180px; border-radius: 10px; box-shadow: 0 2px 8px #0001; }
+        .card { margin-bottom: 1.5rem; }
+        .log-box { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 1rem; font-size: 0.95em; max-height: 200px; overflow-y: auto; }
+        .preview-img { margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍎 Teste Upload Foto Perfil - Merenda</h1>
-        
-        <!-- Login -->
-        <div id="loginSection">
-            <h3>1. Fazer Login</h3>
-            <input type="email" id="email" placeholder="guilherme@edu.muriae.mg.gov.br">
-            <input type="password" id="senha" placeholder="Sua senha">
-            <button onclick="fazerLogin()">Login</button>
-        </div>
-
-        <!-- Upload -->
-        <div id="uploadSection" style="display:none;">
-            <h3>2. Selecionar Foto</h3>
-            <input type="file" id="fotoInput" accept="image/*" onchange="previsualizarFoto()">
-            <br><br>
-            <div id="preview"></div>
-            <button onclick="uploadFoto()">📤 Enviar Foto</button>
-        </div>
-
-        <!-- Resultado -->
-        <div id="resultSection" style="display:none;">
-            <h3>3. Foto no Google Drive</h3>
-            <div id="resultado"></div>
-            <button onclick="buscarFoto()">🔄 Buscar Foto Atual</button>
-            <button onclick="removerFoto()">🗑️ Remover Foto</button>
-        </div>
-
-        <!-- Debug -->
-        <div class="result">
-            <h4>📋 Log:</h4>
-            <pre id="log"></pre>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-md-9">
+            <div class="text-center mb-4">
+                <h1 class="fw-bold">🍎 Teste Upload Foto Perfil <span class="text-primary">WordPress</span></h1>
+                <p class="text-muted">Simule o fluxo completo de upload, consulta e remoção de foto de perfil.</p>
+            </div>
+            <!-- Login -->
+            <div class="card shadow-sm" id="loginSection">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">1. Fazer Login</h5>
+                    <div class="mb-3">
+                        <input type="email" id="email" class="form-control" placeholder="Seu e-mail institucional">
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" id="senha" class="form-control" placeholder="Sua senha">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="fazerLogin()">Entrar</button>
+                </div>
+            </div>
+            <!-- Upload -->
+            <div class="card shadow-sm" id="uploadSection" style="display:none;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">2. Selecionar Foto</h5>
+                    <input type="file" id="fotoInput" accept="image/*" class="form-control mb-3" onchange="previsualizarFoto()">
+                    <div id="preview"></div>
+                    <button class="btn btn-success w-100 mt-2" onclick="uploadFoto()">📤 Enviar Foto</button>
+                </div>
+            </div>
+            <!-- Resultado -->
+            <div class="card shadow-sm" id="resultSection" style="display:none;">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">3. Foto no WordPress</h5>
+                    <div id="resultado"></div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-outline-primary flex-fill" onclick="buscarFoto()">🔄 Buscar Foto Atual</button>
+                        <button class="btn btn-outline-danger flex-fill" onclick="removerFoto()">🗑️ Remover Foto</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Debug -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="card-title mb-2">📋 Log:</h6>
+                    <div class="log-box" id="log"></div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <script>
-        let token = '';
-        const API_URL = 'http://localhost:3003';
-
-        function log(msg) {
-            document.getElementById('log').innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
+</div>
+<script>
+    let token = '';
+    const API_URL = 'http://localhost:3003';
+    function log(msg) {
+        const logBox = document.getElementById('log');
+        logBox.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${msg}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+    // 1. Login
+    async function fazerLogin() {
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('senha').value;
+        try {
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, senha })
+            });
+            const result = await response.json();
+            if (result.status === 'sucesso') {
+                token = result.dados.token;
+                log('✅ Login realizado com sucesso!');
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('uploadSection').style.display = 'block';
+            } else {
+                log('❌ Erro no login: ' + result.mensagem);
+            }
+        } catch (error) {
+            log('❌ Erro de conexão: ' + error.message);
         }
-
-        // 1. Login
-        async function fazerLogin() {
-            const email = document.getElementById('email').value;
-            const senha = document.getElementById('senha').value;
-
+    }
+    // 2. Preview da foto
+    function previsualizarFoto() {
+        const file = document.getElementById('fotoInput').files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview').innerHTML = 
+                    `<img src="${e.target.result}" class="foto preview-img mb-2"><br>
+                     <span class="badge bg-secondary">${file.name}</span>
+                     <span class="badge bg-info text-dark ms-2">${(file.size/1024).toFixed(1)} KB</span>
+                     <span class="badge bg-light text-dark ms-2">${file.type}</span>`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    // 3. Upload da foto
+    async function uploadFoto() {
+        const file = document.getElementById('fotoInput').files[0];
+        if (!file) {
+            alert('Selecione uma foto primeiro!');
+            return;
+        }
+        log('📤 Convertendo foto para base64...');
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64 = e.target.result.split(',')[1];
             try {
-                const response = await fetch(`${API_URL}/auth/login`, {
+                log('📤 Enviando para API...');
+                const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, senha })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        fileData: base64,
+                        fileName: file.name,
+                        mimeType: file.type
+                    })
                 });
-
                 const result = await response.json();
-                
-                if (result.status === 'sucesso') {
-                    token = result.dados.token;
-                    log('✅ Login realizado com sucesso!');
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('uploadSection').style.display = 'block';
+                log('📋 Resposta da API: ' + JSON.stringify(result, null, 2));
+                if (result.success) {
+                    log('✅ Upload realizado com sucesso!');
+                    document.getElementById('resultSection').style.display = 'block';
+                    mostrarResultado(result.data);
                 } else {
-                    log('❌ Erro no login: ' + result.mensagem);
+                    log('❌ Erro no upload: ' + result.error);
                 }
             } catch (error) {
                 log('❌ Erro de conexão: ' + error.message);
             }
-        }
-
-        // 2. Preview da foto
-        function previsualizarFoto() {
-            const file = document.getElementById('fotoInput').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('preview').innerHTML = 
-                        `<img src="${e.target.result}" class="foto"><br>
-                         <strong>Arquivo:</strong> ${file.name}<br>
-                         <strong>Tamanho:</strong> ${(file.size/1024).toFixed(1)} KB<br>
-                         <strong>Tipo:</strong> ${file.type}`;
-                };
-                reader.readAsDataURL(file);
+        };
+        reader.readAsDataURL(file);
+    }
+    // 4. Mostrar resultado
+    function mostrarResultado(data) {
+        const html = `
+            <div class="alert alert-success">
+                <h5 class="mb-2">✅ Foto enviada com sucesso!</h5>
+                <p><strong>ID do arquivo:</strong> ${data.fileId || 'N/A'}</p>
+                <p><strong>Nome:</strong> ${data.fileName || 'N/A'}</p>
+                <p><strong>URL do WordPress:</strong></p>
+                <a href="${data.fotoUrl}" target="_blank">${data.fotoUrl}</a>
+                <br><br>
+                <img src="${data.fotoUrl}" class="foto" alt="Foto do WordPress">
+            </div>
+        `;
+        document.getElementById('resultado').innerHTML = html;
+    }
+    // 5. Buscar foto atual
+    async function buscarFoto() {
+        try {
+            const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            log('📋 Foto atual: ' + JSON.stringify(result, null, 2));
+            if (result.success && result.data.fotoUrl) {
+                mostrarResultado(result.data);
             }
+        } catch (error) {
+            log('❌ Erro ao buscar foto: ' + error.message);
         }
-
-        // 3. Upload da foto
-        async function uploadFoto() {
-            const file = document.getElementById('fotoInput').files[0];
-            if (!file) {
-                alert('Selecione uma foto primeiro!');
-                return;
+    }
+    // 6. Remover foto
+    async function removerFoto() {
+        try {
+            const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            log('🗑️ Remoção: ' + JSON.stringify(result, null, 2));
+            if (result.success) {
+                document.getElementById('resultado').innerHTML = '<div class="alert alert-warning">✅ Foto removida com sucesso!</div>';
             }
-
-            log('📤 Convertendo foto para base64...');
-            
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1]; // Remove data:image...;base64,
-                
-                try {
-                    log('📤 Enviando para API...');
-                    const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            fileData: base64,
-                            fileName: file.name,
-                            mimeType: file.type
-                        })
-                    });
-
-                    const result = await response.json();
-                    log('📋 Resposta da API: ' + JSON.stringify(result, null, 2));
-
-                    if (result.success) {
-                        log('✅ Upload realizado com sucesso!');
-                        document.getElementById('resultSection').style.display = 'block';
-                        mostrarResultado(result.data);
-                    } else {
-                        log('❌ Erro no upload: ' + result.error);
-                    }
-                } catch (error) {
-                    log('❌ Erro de conexão: ' + error.message);
-                }
-            };
-            reader.readAsDataURL(file);
+        } catch (error) {
+            log('❌ Erro ao remover foto: ' + error.message);
         }
-
-        // 4. Mostrar resultado
-        function mostrarResultado(data) {
-            const html = `
-                <div class="result">
-                    <h4>✅ Foto enviada com sucesso!</h4>
-                    <p><strong>ID do arquivo:</strong> ${data.fileId || 'N/A'}</p>
-                    <p><strong>Nome:</strong> ${data.fileName || 'N/A'}</p>
-                    <p><strong>URL do Google Drive:</strong></p>
-                    <a href="${data.fotoUrl}" target="_blank">${data.fotoUrl}</a>
-                    <br><br>
-                    <img src="${data.fotoUrl}" class="foto" alt="Foto do Google Drive">
-                </div>
-            `;
-            document.getElementById('resultado').innerHTML = html;
-        }
-
-        // 5. Buscar foto atual
-        async function buscarFoto() {
-            try {
-                const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const result = await response.json();
-                log('📋 Foto atual: ' + JSON.stringify(result, null, 2));
-                
-                if (result.success && result.data.fotoUrl) {
-                    mostrarResultado(result.data);
-                }
-            } catch (error) {
-                log('❌ Erro ao buscar foto: ' + error.message);
-            }
-        }
-
-        // 6. Remover foto
-        async function removerFoto() {
-            try {
-                const response = await fetch(`${API_URL}/usuario/foto-perfil`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const result = await response.json();
-                log('🗑️ Remoção: ' + JSON.stringify(result, null, 2));
-                
-                if (result.success) {
-                    document.getElementById('resultado').innerHTML = '<p>✅ Foto removida com sucesso!</p>';
-                }
-            } catch (error) {
-                log('❌ Erro ao remover foto: ' + error.message);
-            }
-        }
-    </script>
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

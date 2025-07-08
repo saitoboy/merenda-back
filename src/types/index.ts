@@ -308,3 +308,18 @@ export interface Ramal {
   nome_ramal: string;
   escolas?: Escola[];
 }
+
+// --- Foto de Perfil (WordPress) ---
+export interface UploadFotoResponse {
+  success: boolean;
+  fileId?: string;
+  fileName?: string;
+  fotoUrl?: string;
+  error?: string;
+}
+
+export interface RemoveFotoResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}

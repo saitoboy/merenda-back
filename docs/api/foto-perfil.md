@@ -1,29 +1,30 @@
-# 📸 Sistema de Foto de Perfil - Integração Google Drive
+# 📸 Sistema de Foto de Perfil - Integração WordPress
 
 ## ✅ IMPLEMENTAÇÃO COMPLETA
 
 ### 🔧 **Tecnologias Utilizadas**
 - **Backend**: Node.js + Express + TypeScript
 - **Banco**: PostgreSQL (campo `foto_perfil_url` na tabela `usuario`)
-- **Armazenamento**: Google Drive via Google Apps Script
+- **Armazenamento**: WordPress via REST API
 - **Autenticação**: JWT middleware existente
 - **Upload**: Base64 via JSON (sem multer/multipart)
 
-### 🌐 **Google Apps Script Configurado**
-- **URL**: https://script.google.com/macros/s/AKfycbxOCWbrnYI8K2d6GwfG3zwww05oFUh9RxwVrd-HV0opP8dCUcPXcUHxMvR9lV-x29H5/exec
-- **Pasta Drive**: "Caminhos da Merenda" (ID: 1Oj0Lirtl5Ywy4IpCxUOmUcVtwietfVTx)
+### 🌐 **WordPress Configurado**
+- **URL**: Definida em `WP_URL` no .env
+- **Usuário**: Definido em `WP_USER` no .env
+- **Application Password**: Definido em `WP_APP_PASSWORD` no .env
 - **Funcionalidades**: Upload, Delete, Test
 
 ---
 
 ## 📋 **ENDPOINTS DISPONÍVEIS**
 
-### 1. **Testar Google Apps Script**
+### 1. **Testar WordPress**
 ```http
 GET /usuario/foto-perfil/status
 ```
 - ✅ **Sem autenticação**
-- 🎯 **Objetivo**: Verificar se o Google Apps Script está online
+- 🎯 **Objetivo**: Verificar se o WordPress está online e autenticado
 - 📤 **Resposta**: Status da conexão + informações do serviço
 
 ### 2. **Upload de Foto de Perfil**
@@ -57,7 +58,7 @@ DELETE /usuario/foto-perfil
 Authorization: Bearer {token}
 ```
 - 🔐 **Requer autenticação**
-- 🗑️ **Remove**: Arquivo do Drive + URL do banco
+- 🗑️ **Remove**: Arquivo do WordPress + URL do banco
 
 ### 5. **Obter Foto de Outro Usuário**
 ```http
@@ -75,7 +76,7 @@ Authorization: Bearer {token}
 ### **Arquivo de Teste Criado**: `teste-foto-perfil.http`
 
 ```bash
-# 1. Testar se Google Apps Script está funcionando
+# 1. Testar se WordPress está funcionando
 GET http://localhost:3003/usuario/foto-perfil/status
 
 # 2. Fazer login e obter token
@@ -94,7 +95,7 @@ POST http://localhost:3003/auth/login
    ```
    GET /usuario/foto-perfil/status
    ```
-   - ✅ Deve retornar `success: true` e detalhes do Google Apps Script
+   - ✅ Deve retornar `success: true` e detalhes do WordPress
 
 2. **Fazer Login** (usar endpoint existente):
    ```
@@ -111,19 +112,19 @@ POST http://localhost:3003/auth/login
 4. **Upload de Foto**:
    - 🖼️ Converter uma imagem pequena para base64
    - 📤 Enviar via POST /usuario/foto-perfil
-   - ✅ Verificar se retorna URL do Google Drive
+   - ✅ Verificar se retorna URL do WordPress
 
 5. **Verificar Upload**:
    ```
    GET /usuario/foto-perfil
    ```
-   - 🔗 Deve retornar a URL da foto no Drive
+   - 🔗 Deve retornar a URL da foto no WordPress
 
 6. **Testar Remoção**:
    ```
    DELETE /usuario/foto-perfil
    ```
-   - 🗑️ Deve remover foto do Drive e banco
+   - 🗑️ Deve remover foto do WordPress e banco
 
 ---
 
@@ -134,7 +135,7 @@ POST http://localhost:3003/auth/login
 ALTER TABLE usuario ADD COLUMN foto_perfil_url TEXT;
 ```
 - ✅ **Migration 012** executada com sucesso
-- 📝 **Comentário**: URL da foto de perfil armazenada no Google Drive
+- 📝 **Comentário**: URL da foto de perfil armazenada no WordPress
 - 🔍 **Índice**: Criado para otimização
 
 ---
@@ -149,7 +150,7 @@ ALTER TABLE usuario ADD COLUMN foto_perfil_url TEXT;
 - 🛡️ **Base64**: Validação rigorosa do formato
 
 ### **Tratamento de Erros**:
-- 🌐 **Google Apps Script Offline**: Retorna erro claro
+- 🌐 **WordPress Offline**: Retorna erro claro
 - 📂 **Arquivo Inválido**: Validação antes do upload
 - 🔗 **URL Corrompida**: Fallback seguro na remoção
 - 🚫 **Acesso Negado**: Respostas HTTP apropriadas
@@ -175,7 +176,7 @@ ALTER TABLE usuario ADD COLUMN foto_perfil_url TEXT;
    - 👁️ Modal de visualização
 
 ### **Melhorias Opcionais**:
-- 🔄 **Sync periódico** (verificar se arquivos ainda existem no Drive)
+- 🔄 **Sync periódico** (verificar se arquivos ainda existem no WordPress)
 - 📈 **Analytics** (quantas fotos por usuário, tipos mais usados)
 - 🎨 **Redimensionamento automático** (otimizar tamanho)
 - 📱 **Versões múltiplas** (thumbnail, medium, full)
@@ -196,20 +197,19 @@ reader.onload = function(e) {
 reader.readAsDataURL(file);
 ```
 
-### **URLs Geradas pelo Google Drive**:
-- **webViewLink**: Para visualização (com interface do Drive)
-- **webContentLink**: Para download direto (melhor para `<img src="">`)
-- 🔗 Ambas são salvas no banco para flexibilidade
+### **URLs Geradas pelo WordPress**:
+- **source_url**: URL direta da imagem para uso em <img src="">
+- 🔗 Salva no banco para flexibilidade
 
 ---
 
 ## ✅ **STATUS FINAL**
 
 - ✅ **Backend**: 100% implementado e testado
-- ✅ **Google Apps Script**: Online e funcionando
+- ✅ **WordPress**: Online e funcionando
 - ✅ **Banco de Dados**: Migration executada
 - ✅ **Rotas**: Registradas e ativas
 - ✅ **Documentação**: Completa
 - ✅ **Testes**: Arquivo HTTP criado
 
-**🎉 SISTEMA DE FOTO DE PERFIL PRONTO PARA USO! 🎉**
+**🎉 SISTEMA DE FOTO DE PERFIL PRONTO PARA USO COM WORDPRESS! 🎉**

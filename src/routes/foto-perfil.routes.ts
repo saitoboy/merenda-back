@@ -5,12 +5,12 @@ import { autenticar } from '../middleware/auth.middleware';
 const router = Router();
 
 /**
- * Rotas para gerenciamento de fotos de perfil
- * Todas as rotas requerem autenticação
+ * Rotas para gerenciamento de fotos de perfil (WordPress)
+ * Todas as rotas requerem autenticação, exceto status
  */
 
-// Testar se o Google Apps Script está funcionando
-router.get('/status', FotoPerfilController.testarGoogleAppsScript);
+// Testar se o WordPress está funcionando
+router.get('/status', FotoPerfilController.testarWordPress);
 
 // Upload de foto de perfil (recebe base64 via JSON)
 router.post('/', autenticar, FotoPerfilController.uploadFotoPerfil);
