@@ -30,6 +30,7 @@ export const login = async (email: string, senha: string) => {
     const tokenPayload = {
       id_usuario: usuario.id_usuario,
       nome_usuario: usuario.nome_usuario,
+      sobrenome_usuario: usuario.sobrenome_usuario, // Sobrenome é opcional
       email_usuario: usuario.email_usuario,
       tipo: usuario.tipo_usuario,
       ...(usuario.id_escola && { id_escola: usuario.id_escola })
@@ -44,6 +45,7 @@ export const login = async (email: string, senha: string) => {
     const dadosUsuario = {
       id: usuario.id_usuario,
       nome: usuario.nome_usuario,
+      sobrenome: usuario.sobrenome_usuario,
       email: usuario.email_usuario,
       tipo: usuario.tipo_usuario,
       ...(usuario.id_escola && { id_escola: usuario.id_escola }),

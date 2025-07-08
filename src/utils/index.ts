@@ -9,6 +9,7 @@ interface DadosToken {
   id_usuario: string;
   nome_usuario: string;
   email_usuario: string;
+  sobrenome_usuario: string;
   tipo: TipoUsuario;
   id_escola?: string;
 }
@@ -21,6 +22,7 @@ export const gerarToken = (usuario: DadosToken): string => {
       id: usuario.id_usuario,
       nome: usuario.nome_usuario,
       email: usuario.email_usuario,
+      sobrenome: usuario.sobrenome_usuario,
       tipo: usuario.tipo,
       ...(usuario.id_escola && { id_escola: usuario.id_escola })
     },

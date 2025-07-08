@@ -9,6 +9,7 @@ declare global {
       usuario?: {
         id: string;
         nome: string;
+        sobrenome: string; // Sobrenome é opcional
         email: string;
         tipo: TipoUsuario;
         id_escola?: string;
@@ -44,6 +45,7 @@ export const autenticar = (req: Request, res: Response, next: NextFunction): voi
     req.usuario = {
       id: usuarioDecodificado.id,
       nome: usuarioDecodificado.nome,
+      sobrenome: usuarioDecodificado.sobrenome, // Sobrenome pode ser opcional
       email: usuarioDecodificado.email,
       tipo: usuarioDecodificado.tipo,
       ...(usuarioDecodificado.id_escola && { id_escola: usuarioDecodificado.id_escola })
