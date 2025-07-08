@@ -69,6 +69,30 @@ Authorization: Bearer {token}
 - 👑 **Permissões**: Admins ou próprio usuário
 - 📤 **Retorna**: Dados públicos + URL da foto
 
+### 6. **Listar todas as mídias do WordPress (admin)**
+```http
+GET /usuario/foto-perfil/midias?page=1&perPage=20
+Authorization: Bearer {token_admin}
+```
+- 👑 **Apenas administradores**
+- 🔎 **Retorna**: Lista paginada de mídias do WordPress
+
+### 7. **Buscar mídia do WordPress por ID (admin)**
+```http
+GET /usuario/foto-perfil/midia/{id}
+Authorization: Bearer {token_admin}
+```
+- 👑 **Apenas administradores**
+- 🔎 **Retorna**: Metadados e URL da mídia
+
+### 8. **Deletar mídia do WordPress por ID (admin)**
+```http
+DELETE /usuario/foto-perfil/midia/{id}
+Authorization: Bearer {token_admin}
+```
+- 👑 **Apenas administradores**
+- 🗑️ **Remove**: Arquivo do WordPress
+
 ---
 
 ## 🧪 **TESTANDO A FUNCIONALIDADE**
@@ -125,6 +149,24 @@ POST http://localhost:3003/auth/login
    DELETE /usuario/foto-perfil
    ```
    - 🗑️ Deve remover foto do WordPress e banco
+
+7. **Listar Mídias (Admin)**:
+   ```
+   GET /usuario/foto-perfil/midias?page=1&perPage=20
+   ```
+   - 🔑 Deve retornar lista de mídias (paginada)
+
+8. **Buscar Mídia por ID (Admin)**:
+   ```
+   GET /usuario/foto-perfil/midia/{id}
+   ```
+   - 🔑 Deve retornar detalhes da mídia
+
+9. **Deletar Mídia por ID (Admin)**:
+   ```
+   DELETE /usuario/foto-perfil/midia/{id}
+   ```
+   - 🔑 Deve remover a mídia do WordPress
 
 ---
 

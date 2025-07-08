@@ -24,4 +24,13 @@ router.delete('/', autenticar, FotoPerfilController.removerFotoPerfil);
 // Obter foto de perfil de outro usuário (apenas para admins ou próprio usuário)
 router.get('/:id', autenticar, FotoPerfilController.obterFotoPerfilUsuario);
 
+// Listar todas as mídias do WordPress (apenas admin)
+router.get('/midias', autenticar, FotoPerfilController.listarMidiasWordPress);
+
+// Buscar mídia do WordPress por ID (apenas admin)
+router.get('/midia/:id', autenticar, FotoPerfilController.buscarMidiaPorId);
+
+// Deletar mídia do WordPress por ID (apenas admin)
+router.delete('/midia/:id', autenticar, FotoPerfilController.deletarMidiaPorId);
+
 export default router;

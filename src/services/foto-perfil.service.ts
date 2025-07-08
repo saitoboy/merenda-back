@@ -243,6 +243,59 @@ export class FotoPerfilService {
 
     return { valid: true };
   }
+
+  /**
+   * Lista todas as mídias do WordPress (paginado)
+   * @param page Página (opcional)
+   * @param perPage Itens por página (opcional)
+   * @returns Lista de mídias
+   */
+  async listarMidiasWordPress(page: number = 1, perPage: number = 20): Promise<any> {
+    try {
+      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media?page=${page}&per_page=${perPage}`;
+      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: { 'Authorization': `Basic ${auth}` },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`Erro ao listar mídias: ${response.status} - ${errorText}`, 'foto-perfil');
+        return { success: false, error: `Erro HTTP WordPress: ${response.status} - ${errorText}` };
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error: any) {
+      logger.error(`Erro ao listar mídias: ${error.message}`, 'foto-perfil');
+      return { success: false, error: `Erro de comunicação com WordPress: ${error.message}` };
+    }
+  }
+
+  /**
+   * Busca uma mídia do WordPress por ID
+   * @param id ID da mídia
+   * @returns Dados da mídia
+   */
+  async buscarMidiaPorId(id: string): Promise<any> {
+    try {
+      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media/${id}`;
+      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: { 'Authorization': `Basic ${auth}` },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`Erro ao buscar mídia: ${response.status} - ${errorText}`, 'foto-perfil');
+        return { success: false, error: `Erro HTTP WordPress: ${response.status} - ${errorText}` };
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error: any) {
+      logger.error(`Erro ao buscar mídia: ${error.message}`, 'foto-perfil');
+      return { success: false, error: `Erro de comunicação com WordPress: ${error.message}` };
+    }
+  }
 }
 
 const fotoPerfilService = new FotoPerfilService();

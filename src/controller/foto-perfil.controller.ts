@@ -217,6 +217,79 @@ export class FotoPerfilController {
       res.status(500).json({ success: false, error: 'WordPress não está acessível', details: error.message });
     }
   }
+
+  /**
+   * Listar todas as mídias do WordPress (admin)
+   * GET /usuario/foto-perfil/midias?page=1&perPage=20
+   */
+  static async listarMidiasWordPress(req: Request, res: Response): Promise<void> {
+    try {
+      const usuario = req.usuario;
+      if (!usuario || usuario.tipo !== 'admin') {
+        res.status(403).json({ success: false, error: 'Acesso restrito a administradores' });
+        return;
+      }
+      const page = parseInt(req.query.page as string) || 1;
+      const perPage = parseInt(req.query.perPage as string) || 20;
+      const result = await fotoPerfilService.listarMidiasWordPress(page, perPage);
+      if (result.success) {
+        res.status(200).json({ success: true, data: result.data });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      logger.error(`Erro ao listar mídias: ${error.message}`, 'foto-perfil');
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  }
+
+  /**
+   * Buscar mídia do WordPress por ID (admin)
+   * GET /usuario/foto-perfil/midia/:id
+   */
+  static async buscarMidiaPorId(req: Request, res: Response): Promise<void> {
+    try {
+      const usuario = req.usuario;
+      if (!usuario || usuario.tipo !== 'admin') {
+        res.status(403).json({ success: false, error: 'Acesso restrito a administradores' });
+        return;
+      }
+      const { id } = req.params;
+      const result = await fotoPerfilService.buscarMidiaPorId(id);
+      if (result.success) {
+        res.status(200).json({ success: true, data: result.data });
+      } else {
+        res.status(404).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      logger.error(`Erro ao buscar mídia: ${error.message}`, 'foto-perfil');
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  }
+
+  /**
+   * Deletar mídia do WordPress por ID (admin)
+   * DELETE /usuario/foto-perfil/midia/:id
+   */
+  static async deletarMidiaPorId(req: Request, res: Response): Promise<void> {
+    try {
+      const usuario = req.usuario;
+      if (!usuario || usuario.tipo !== 'admin') {
+        res.status(403).json({ success: false, error: 'Acesso restrito a administradores' });
+        return;
+      }
+      const { id } = req.params;
+      const result = await fotoPerfilService.removerFotoPerfil(id, usuario.id);
+      if (result.success) {
+        res.status(200).json({ success: true, message: result.message });
+      } else {
+        res.status(500).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      logger.error(`Erro ao deletar mídia: ${error.message}`, 'foto-perfil');
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    }
+  }
 }
 
 export default FotoPerfilController;
