@@ -16,7 +16,7 @@ usuarioRouter.get('/:id_usuario', autenticar, UsuarioController.buscarUsuarioPor
 usuarioRouter.post('/', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.criarUsuario);
 
 // Atualizar usuário (admin ou próprio usuário)
-usuarioRouter.put('/:id_usuario', autenticar, UsuarioController.atualizarUsuario);
+usuarioRouter.patch('/:id_usuario', autenticar, UsuarioController.atualizarUsuario);
 
 // Endpoint de alteração de senha
 usuarioRouter.put('/:id_usuario/senha', autenticar, UsuarioController.alterarSenhaUsuario);

@@ -645,10 +645,15 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
   }
 };
 
-// Consolidar estoque por segmento e calcular porcentagens
+// Consolidar estoque por segmento e calcular porcentagens (apenas do período ativo)
 export const consolidarEstoquePorSegmento = async (idEscola: string) => {
-  // Busca todos os itens detalhados do estoque da escola
-  const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola);
+  // Buscar período ativo
+  const periodoAtivo = await PeriodoModel.buscarAtivo();
+  if (!periodoAtivo) {
+    throw new Error('Nenhum período ativo encontrado');
+  }
+  // Busca todos os itens detalhados do estoque da escola, filtrando pelo período ativo
+  const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola, { id_periodo: periodoAtivo.id_periodo });
 
   // Agrupa por segmento e item
   const consolidado: Record<string, { segmento: string, itens: Record<string, { nome_item: string, quantidade: number }> }> = {};
@@ -684,7 +689,8 @@ export const consolidarEstoquePorSegmento = async (idEscola: string) => {
 
   return {
     totalGeral,
-    segmentos: resultado
+    segmentos: resultado,
+    periodo_ativo: periodoAtivo
   };
 };
 
