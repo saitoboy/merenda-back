@@ -78,25 +78,33 @@ export const buscarEscolaPorId = async (req: Request, res: Response): Promise<vo
 export const criarEscola = async (req: Request, res: Response): Promise<void> => {
   try {
     const dadosEscola = req.body;
-    
+    const { ids_segmentos, ...dadosEscolaLimpos } = dadosEscola;
+
     // Validações básicas
-    if (!dadosEscola.nome_escola || !dadosEscola.endereco_escola || !dadosEscola.email_escola) {
+    if (!dadosEscolaLimpos.nome_escola || !dadosEscolaLimpos.endereco_escola || !dadosEscolaLimpos.email_escola) {
       res.status(400).json({
         status: 'erro',
         mensagem: 'Nome, endereço e email são obrigatórios'
       });
       return;
     }
-    
-    // Remover campo obsoleto se presente
-    const { segmento_escola, ...dadosLimpos } = dadosEscola;
-    
-    const resultado = await EscolaService.criarEscola(dadosLimpos);
-    
+
+    // ids_segmentos agora é obrigatório
+    if (!Array.isArray(ids_segmentos) || ids_segmentos.length === 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'É obrigatório informar ao menos um segmento para a escola (ids_segmentos)'
+      });
+      return;
+    }
+
+    // Cria escola já com segmentos
+    const idEscola = await EscolaService.criarComSegmentos(dadosEscolaLimpos, ids_segmentos);
+
     res.status(201).json({
       status: 'sucesso',
-      mensagem: resultado.mensagem,
-      dados: { id: resultado.id }
+      mensagem: 'Escola criada com sucesso',
+      dados: { id: idEscola }
     });
   } catch (error) {
     if (error instanceof Error) {
