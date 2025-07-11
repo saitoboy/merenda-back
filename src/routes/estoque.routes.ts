@@ -53,6 +53,12 @@ estoqueRouter.put('/validade/:id_estoque',
   EstoqueController.atualizarDataValidade
 );
 
+estoqueRouter.patch('/estoque/:id_estoque', 
+  autenticar, 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA, TipoUsuario.NUTRICIONISTA]), 
+  EstoqueController.atualizarEstoque
+);
+
 estoqueRouter.delete('/:id_estoque', 
   autenticar, 
   autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
