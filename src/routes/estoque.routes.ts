@@ -30,7 +30,7 @@ estoqueRouter.post('/ideais/:id_escola',
 // Rotas para operações de estoque (protegidas)
 estoqueRouter.post('/adicionar', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.adicionarItemAoEstoque
 );
 
