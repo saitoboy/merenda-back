@@ -235,7 +235,7 @@ Atualiza os dados de uma escola existente.
 
 ### Excluir Escola
 
-Remove uma escola do sistema.
+Remove uma escola do sistema. A exclusão **só é bloqueada se houver registros de estoque vinculados à escola**. Ter segmentos vinculados não impede a exclusão.
 
 **URL**: `/escolas/:id`
 
@@ -262,6 +262,22 @@ Remove uma escola do sistema.
 {
   "status": "erro",
   "mensagem": "Escola não encontrada"
+}
+```
+
+**Código**: `409 CONFLICT`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Não é possível excluir escola. Existem X registros de estoque para esta escola.",
+  "detalhes": {
+    "entidade": "escola",
+    "id": "uuid-escola",
+    "dependencias": {
+      "estoque": X
+    }
+  }
 }
 ```
 

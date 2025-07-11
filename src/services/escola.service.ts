@@ -134,29 +134,7 @@ export const excluirEscola = async (id_escola: string): Promise<void> => {
       );
     }
     
-    // 3. Verificar se existem relacionamentos escola-segmento
-    const segmentosVinculados = await connection('escola_segmento')
-      .where('id_escola', id_escola)
-      .count('* as total')
-      .first();
-    
-    const totalSegmentos = Number(segmentosVinculados?.total || 0);
-    
-    if (totalSegmentos > 0) {
-      logger.warning(`Escola ${id_escola} possui ${totalSegmentos} segmentos vinculados`, 'escola');
-      throw new ConstraintViolationError(
-        `Não é possível excluir escola. Existem ${totalSegmentos} segmentos vinculados a esta escola.`,
-        {
-          entidade: 'escola',
-          id: id_escola,
-          dependencias: {
-            segmentos: totalSegmentos
-          }
-        }
-      );
-    }
-    
-    // 4. Se não há dependências, pode excluir
+    // 3. Permitir exclusão mesmo com segmentos vinculados
     await EscolaModel.excluir(id_escola);
     
     logger.success(`Escola ${escola.nome_escola} (${id_escola}) excluída com sucesso`, 'escola');
