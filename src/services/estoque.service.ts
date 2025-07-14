@@ -694,6 +694,8 @@ export const consolidarEstoquePorSegmento = async (idEscola: string) => {
   };
 };
 
+/*
+
 // Consolidar estoque geral por escola e calcular porcentagens
 export const consolidarEstoquePorEscola = async () => {
   // Busca todos os itens detalhados do estoque de todas as escolas
@@ -714,6 +716,44 @@ export const consolidarEstoquePorEscola = async () => {
 
   return {
     totalGeral,
+    escolas
+  };
+}; */
+
+// Consolidar estoque geral por escola e calcular porcentagem de atendimento do ideal
+export const consolidarEstoquePorEscola = async () => {
+  // Busca soma de quantidade_item e numero_ideal por escola
+  const estoque = await connection('estoque')
+    .join('escola', 'estoque.id_escola', '=', 'escola.id_escola')
+    .select(
+      'estoque.id_escola',
+      'escola.nome_escola'
+    )
+    .sum('estoque.quantidade_item as total_estoque')
+    .sum('estoque.numero_ideal as total_ideal')
+    .groupBy('estoque.id_escola', 'escola.nome_escola');
+
+  const escolas = estoque.map(e => {
+    const totalEstoque = Number(e.total_estoque);
+    const totalIdeal = Number(e.total_ideal);
+    return {
+      id_escola: e.id_escola,
+      nome_escola: e.nome_escola,
+      total_estoque: totalEstoque,
+      total_ideal: totalIdeal,
+      porcentagem: totalIdeal > 0 ? (totalEstoque / totalIdeal) * 100 : 0
+    };
+  });
+
+  // Soma geral dos estoques e dos ideais
+  const totalGeralEstoque = escolas.reduce((acc, escola) => acc + escola.total_estoque, 0);
+  const totalGeralIdeal = escolas.reduce((acc, escola) => acc + escola.total_ideal, 0);
+  const porcentagemGeral = totalGeralIdeal > 0 ? (totalGeralEstoque / totalGeralIdeal) * 100 : 0;
+
+  return {
+    totalGeralEstoque,
+    totalGeralIdeal,
+    porcentagemGeral,
     escolas
   };
 };
