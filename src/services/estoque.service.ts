@@ -645,7 +645,7 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
   }
 };
 
-// Consolidar estoque por segmento e calcular porcentagens (apenas do período ativo)
+// Consolidar estoque por segmento e calcular porcentagens de atendimento do ideal (apenas do período ativo)
 export const consolidarEstoquePorSegmento = async (idEscola: string) => {
   // Buscar período ativo
   const periodoAtivo = await PeriodoModel.buscarAtivo();
@@ -656,8 +656,9 @@ export const consolidarEstoquePorSegmento = async (idEscola: string) => {
   const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola, { id_periodo: periodoAtivo.id_periodo });
 
   // Agrupa por segmento e item
-  const consolidado: Record<string, { segmento: string, itens: Record<string, { nome_item: string, quantidade: number }> }> = {};
+  const consolidado: Record<string, { segmento: string, itens: Record<string, { nome_item: string, quantidade: number, numero_ideal: number }> }> = {};
   let totalGeral = 0;
+  let totalIdealGeral = 0;
 
   estoque.forEach(item => {
     const segmento = item.nome_segmento || item.id_segmento;
@@ -666,35 +667,42 @@ export const consolidarEstoquePorSegmento = async (idEscola: string) => {
       consolidado[segmento] = { segmento, itens: {} };
     }
     if (!consolidado[segmento].itens[nome_item]) {
-      consolidado[segmento].itens[nome_item] = { nome_item, quantidade: 0 };
+      consolidado[segmento].itens[nome_item] = { nome_item, quantidade: 0, numero_ideal: 0 };
     }
     consolidado[segmento].itens[nome_item].quantidade += item.quantidade_item;
+    consolidado[segmento].itens[nome_item].numero_ideal += item.numero_ideal || 0;
     totalGeral += item.quantidade_item;
+    totalIdealGeral += item.numero_ideal || 0;
   });
 
-  // Calcula porcentagem por item e segmento
+  // Calcula porcentagem de atendimento do ideal por item e segmento
   const resultado = Object.values(consolidado).map(seg => {
     const totalSegmento = Object.values(seg.itens).reduce((acc, i) => acc + i.quantidade, 0);
+    const totalIdealSegmento = Object.values(seg.itens).reduce((acc, i) => acc + i.numero_ideal, 0);
     return {
       segmento: seg.segmento,
       totalSegmento,
-      porcentagemSegmento: totalGeral > 0 ? (totalSegmento / totalGeral) * 100 : 0,
+      totalIdealSegmento,
+      porcentagemAtendimentoSegmento: totalIdealSegmento > 0 ? (totalSegmento / totalIdealSegmento) * 100 : 0,
       itens: Object.values(seg.itens).map(i => ({
         nome_item: i.nome_item,
         quantidade: i.quantidade,
-        porcentagem: totalSegmento > 0 ? (i.quantidade / totalSegmento) * 100 : 0
+        numero_ideal: i.numero_ideal,
+        porcentagem_atendimento_ideal: i.numero_ideal > 0 ? (i.quantidade / i.numero_ideal) * 100 : 0
       }))
     };
   });
 
   return {
     totalGeral,
+    totalIdealGeral,
+    porcentagemAtendimentoGeral: totalIdealGeral > 0 ? (totalGeral / totalIdealGeral) * 100 : 0,
     segmentos: resultado,
     periodo_ativo: periodoAtivo
   };
 };
 
-/*
+
 
 // Consolidar estoque geral por escola e calcular porcentagens
 export const consolidarEstoquePorEscola = async () => {
@@ -716,44 +724,6 @@ export const consolidarEstoquePorEscola = async () => {
 
   return {
     totalGeral,
-    escolas
-  };
-}; */
-
-// Consolidar estoque geral por escola e calcular porcentagem de atendimento do ideal
-export const consolidarEstoquePorEscola = async () => {
-  // Busca soma de quantidade_item e numero_ideal por escola
-  const estoque = await connection('estoque')
-    .join('escola', 'estoque.id_escola', '=', 'escola.id_escola')
-    .select(
-      'estoque.id_escola',
-      'escola.nome_escola'
-    )
-    .sum('estoque.quantidade_item as total_estoque')
-    .sum('estoque.numero_ideal as total_ideal')
-    .groupBy('estoque.id_escola', 'escola.nome_escola');
-
-  const escolas = estoque.map(e => {
-    const totalEstoque = Number(e.total_estoque);
-    const totalIdeal = Number(e.total_ideal);
-    return {
-      id_escola: e.id_escola,
-      nome_escola: e.nome_escola,
-      total_estoque: totalEstoque,
-      total_ideal: totalIdeal,
-      porcentagem: totalIdeal > 0 ? (totalEstoque / totalIdeal) * 100 : 0
-    };
-  });
-
-  // Soma geral dos estoques e dos ideais
-  const totalGeralEstoque = escolas.reduce((acc, escola) => acc + escola.total_estoque, 0);
-  const totalGeralIdeal = escolas.reduce((acc, escola) => acc + escola.total_ideal, 0);
-  const porcentagemGeral = totalGeralIdeal > 0 ? (totalGeralEstoque / totalGeralIdeal) * 100 : 0;
-
-  return {
-    totalGeralEstoque,
-    totalGeralIdeal,
-    porcentagemGeral,
     escolas
   };
 };
