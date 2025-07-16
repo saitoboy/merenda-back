@@ -102,11 +102,11 @@ class MigrationRunner {
                     `);
                     return parseInt(hasIndexes.rows[0].count) < 5;
 
-                case '009_insert_test_period.sql':
-                    const hasTestPeriod = await this.pool.query(
-                        'SELECT COUNT(*) FROM periodo_lancamento WHERE mes = 6 AND ano = 2025'
+                case '009_create_password_reset_otp_table.sql':
+                    const otpTableExists = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'password_reset_otp')"
                     );
-                    return parseInt(hasTestPeriod.rows[0].count) === 0;
+                    return !otpTableExists.rows[0].exists;
 
                 case '010_cleanup_estoque_table.sql':
                     const hasOldColumn = await this.pool.query(`
@@ -169,6 +169,12 @@ class MigrationRunner {
                     // Se tudo existe e está associado, não precisa rodar
                     return false;
                 }
+
+                case '014_create_auditoria_pedido_table.sql':
+                    const auditoriaPedidoExists = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'auditoria_pedido')"
+                    );
+                    return !auditoriaPedidoExists.rows[0].exists;
                 
                 default:
                     return true; // Se não souber, tenta executar
@@ -176,6 +182,33 @@ class MigrationRunner {
         } catch (error) {
             return true; // Se der erro na verificação, tenta executar
         }
+    }
+
+    async checkEssentialTables() {
+        const essentialTables = [
+            'segmento',
+            'periodo_lancamento',
+            'escola_segmento',
+            'estoque',
+            'password_reset_otp',
+            'auditoria_pedido',
+            'ramal',
+            'usuario',
+            'escola',
+            'pedido'
+        ];
+        const missing = [];
+        for (const table of essentialTables) {
+            try {
+                const res = await this.pool.query(
+                    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)`, [table]
+                );
+                if (!res.rows[0].exists) missing.push(table);
+            } catch (err) {
+                missing.push(table);
+            }
+        }
+        return missing;
     }
 
     async run() {
@@ -241,6 +274,16 @@ class MigrationRunner {
 
             // 4. Relatório final
             this.showFinalReport(executed, skipped, errors);
+
+            // 5. Verificação das tabelas essenciais
+            const missingTables = await this.checkEssentialTables();
+            if (missingTables.length === 0) {
+                console.log('🟢 Todas as tabelas essenciais foram criadas com sucesso!');
+            } else {
+                console.log('🔴 Atenção: As seguintes tabelas essenciais NÃO foram encontradas:');
+                missingTables.forEach(tbl => console.log('   • ' + tbl));
+                console.log('💡 Verifique as migrations e o banco de dados.');
+            }
             
         } catch (error) {
             console.error('❌ Erro fatal:', error.message);

@@ -26,7 +26,7 @@ export interface Escola {
   nome_escola: string;
   endereco_escola: string;
   email_escola: string;
-    ramal_id?: string | null; // UUID do ramal associado (pode ser nulo)
+  ramal_id?: string | null; // UUID do ramal associado (pode ser nulo)
 }
 
 // Interface do fornecedor
@@ -99,6 +99,19 @@ export interface Pedido {
   id_item: string; // UUID
   id_escola: string; // UUID
   data_pedido: Date;
+}
+
+// Auditoria de geração de pedido
+export interface AuditoriaPedido {
+  id_auditoria: string; // UUID
+  created_by: string; // UUID do usuário que gerou o pedido
+  created_at: Date;
+  id_periodo: string; // UUID do período
+}
+
+export interface CriarAuditoriaPedido {
+  created_by: string;
+  id_periodo: string;
 }
 
 // DTOs e interfaces auxiliares para o novo modelo normalizado
@@ -302,13 +315,6 @@ export interface ResumoPedido {
   nome_escola: string;
 }
 
-// Interface de Ramal
-export interface Ramal {
-  id_ramal: string;
-  nome_ramal: string;
-  escolas?: Escola[];
-}
-
 // --- Foto de Perfil (WordPress) ---
 export interface UploadFotoResponse {
   success: boolean;
@@ -322,4 +328,11 @@ export interface RemoveFotoResponse {
   success: boolean;
   message?: string;
   error?: string;
+}
+
+// Interface de Ramal
+export interface Ramal {
+  id_ramal: string;
+  nome_ramal: string;
+  escolas?: Escola[];
 }
