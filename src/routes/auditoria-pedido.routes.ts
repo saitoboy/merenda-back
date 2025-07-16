@@ -4,9 +4,9 @@ import { registrarAuditoriaPedido, listarAuditoriasPedido } from '../controller/
 const router = Router();
 
 // POST /auditoria-pedido
-router.post('/auditoria-pedido', registrarAuditoriaPedido);
+router.post('/criar', registrarAuditoriaPedido);
 
 // GET /auditoria-pedido
-router.get('/auditoria-pedido', listarAuditoriasPedido);
+router.get('/', listarAuditoriasPedido);
 
 export default router;
