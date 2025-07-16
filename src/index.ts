@@ -19,6 +19,7 @@ import diagnosticoRouter from './routes/diagnostico.routes';
 import fotoPerfilRouter from './routes/foto-perfil.routes';
 import usuarioRouter from './routes/usuario.routes';
 import ramalRouter from './routes/ramal.routes';
+import auditoriaPedidoRouter from './routes/auditoria-pedido.routes';
 
 const app = express();
 
@@ -139,6 +140,9 @@ logger.debug('Rotas de usuários registradas', 'route');
 
 app.use('/ramais', ramalRouter);
 logger.debug('Rotas de ramais registradas', 'route');
+
+app.use('/auditoria-pedido', auditoriaPedidoRouter);
+logger.debug('Rotas de auditoria de pedido registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 
