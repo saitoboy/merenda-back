@@ -192,6 +192,25 @@ class MigrationRunner {
                     return !pedidoEscolaTable.rows[0].exists;
                 }
                 
+                case '017_alter_periodo_lancamento_criado_por_nullable.sql': {
+                    // Verifica se a constraint já está ON DELETE SET NULL e se criado_por é nullable
+                    const constraint = await this.pool.query(`
+                        SELECT conname, confdeltype
+                        FROM pg_constraint
+                        WHERE conname = 'periodo_lancamento_criado_por_fkey'
+                          AND conrelid = 'periodo_lancamento'::regclass
+                    `);
+                    const column = await this.pool.query(`
+                        SELECT is_nullable
+                        FROM information_schema.columns
+                        WHERE table_name = 'periodo_lancamento' AND column_name = 'criado_por'
+                    `);
+                    // confdeltype = 'n' significa ON DELETE SET NULL
+                    const isSetNull = constraint.rows.length > 0 && constraint.rows[0].confdeltype === 'n';
+                    const isNullable = column.rows.length > 0 && column.rows[0].is_nullable === 'YES';
+                    return !(isSetNull && isNullable);
+                }
+                
                 default:
                     return true; // Se não souber, tenta executar
             }
@@ -289,7 +308,7 @@ class MigrationRunner {
             }
 
             // 4. Relatório final
-            this.showFinalReport(executed, skipped, errors);
+            this.showFinalReport(executed, skipped, errors, migrationFiles);
 
             // 5. Verificação das tabelas essenciais
             const missingTables = await this.checkEssentialTables();
@@ -349,14 +368,20 @@ class MigrationRunner {
         }
     }
 
-    showFinalReport(executed, skipped, errors) {
+    showFinalReport(executed, skipped, errors, migrationFiles) {
         console.log('📊 RELATÓRIO FINAL:');
         console.log('='.repeat(30));
         console.log(`✅ Executadas: ${executed}`);
         console.log(`⏭️  Puladas: ${skipped}`);
         console.log(`❌ Erros: ${errors}`);
         console.log('');
-        
+        console.log('📋 Status de cada migration:');
+        migrationFiles.forEach((file, idx) => {
+            // Aqui você pode customizar para mostrar status detalhado se quiser
+            // Exemplo: apenas lista o nome
+            console.log(`   • ${file}`);
+        });
+        console.log('');
         if (errors === 0) {
             console.log('🎉 NORMALIZAÇÃO CONCLUÍDA COM SUCESSO!');
             console.log('✅ Banco de dados normalizado e pronto para uso!');
