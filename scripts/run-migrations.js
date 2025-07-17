@@ -176,6 +176,14 @@ class MigrationRunner {
                     );
                     return !auditoriaPedidoExists.rows[0].exists;
                 
+                case '015_add_tipo_pedido_to_auditoria_pedido.sql': {
+                    // Verifica se a coluna tipo_pedido já existe
+                    const tipoPedidoColumn = await this.pool.query(
+                        "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'auditoria_pedido' AND column_name = 'tipo_pedido'"
+                    );
+                    return parseInt(tipoPedidoColumn.rows[0].count) === 0;
+                }
+                
                 default:
                     return true; // Se não souber, tenta executar
             }

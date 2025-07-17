@@ -107,11 +107,13 @@ export interface AuditoriaPedido {
   created_by: string; // UUID do usuário que gerou o pedido
   created_at: Date;
   id_periodo: string; // UUID do período
+  tipo_pedido?: string; // Tipo do pedido (pedido 1, pedido 2, etc.)
 }
 
 export interface CriarAuditoriaPedido {
   created_by: string;
   id_periodo: string;
+  tipo_pedido?: string; // Tipo do pedido informado pelo usuário
 }
 
 // DTOs e interfaces auxiliares para o novo modelo normalizado

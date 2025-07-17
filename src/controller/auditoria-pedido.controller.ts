@@ -6,7 +6,7 @@ export const registrarAuditoriaPedido = (req: Request, res: Response) => {
   AuditoriaPedidoService.registrarAuditoriaPedido(req.body)
     .then(resultado => {
       logInfo('Auditoria de pedido registrada com sucesso', 'controller', resultado);
-      res.status(201).json({ status: 'sucesso', ...resultado });
+      res.status(201).json({ status: 'sucesso', ...resultado }); // tipo_pedido já incluso
     })
     .catch(error => {
       logError('Erro ao registrar auditoria de pedido', 'controller', error);

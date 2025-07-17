@@ -7,7 +7,8 @@ export const registrarAuditoriaPedido = async (dados: CriarAuditoriaPedido) => {
   const idAuditoria = await AuditoriaPedidoModel.criarAuditoriaPedido(dados);
   return {
     mensagem: 'Auditoria registrada com sucesso',
-    id_auditoria: idAuditoria
+    id_auditoria: idAuditoria,
+    tipo_pedido: dados.tipo_pedido // retorna o tipo_pedido informado
   };
 };
 
