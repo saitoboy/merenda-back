@@ -15,6 +15,9 @@ usuarioRouter.get('/:id_usuario', autenticar, UsuarioController.buscarUsuarioPor
 // Criar usuário (apenas ADMIN)
 usuarioRouter.post('/', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.criarUsuario);
 
+// Criar usuários em lote (apenas ADMIN)
+usuarioRouter.post('/lote', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.criarUsuariosEmLote);
+
 // Atualizar usuário (admin ou próprio usuário)
 usuarioRouter.patch('/:id_usuario', autenticar, UsuarioController.atualizarUsuario);
 

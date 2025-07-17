@@ -60,3 +60,19 @@ export const atualizarUsuario = async (id_usuario: string, dados: Partial<Omit<U
 export const excluirUsuario = async (id_usuario: string): Promise<void> => {
   await UsuarioModel.excluir(id_usuario);
 };
+
+export const criarUsuariosEmLote = async (usuarios: Array<Omit<Usuario, 'id_usuario'>>): Promise<Array<Omit<Usuario, 'senha_usuario'>>> => {
+  // Criptografa todas as senhas
+  const usuariosParaCriar = await Promise.all(
+    usuarios.map(async dados => ({
+      ...dados,
+      senha_usuario: await criptografarSenha(dados.senha_usuario)
+    }))
+  );
+  // Insere em lote
+  const ids = await UsuarioModel.criarEmLote(usuariosParaCriar);
+  // Busca todos os usuários criados
+  const usuariosCriados = await Promise.all(ids.map(id => UsuarioModel.buscarPorId(id)));
+  // Remove o campo senha_usuario
+  return usuariosCriados.map(({ senha_usuario, ...rest }) => rest);
+};

@@ -120,6 +120,19 @@ export const criarUsuario = async (req: Request, res: Response): Promise<void> =
   }
 };
 
+// POST /usuarios/lote (apenas admin)
+export const criarUsuariosEmLote = (req: Request, res: Response) => {
+  import('../services/usuario.service').then(UsuarioService => {
+    UsuarioService.criarUsuariosEmLote(req.body)
+      .then(usuarios => {
+        res.status(201).json({ status: 'sucesso', usuarios });
+      })
+      .catch(error => {
+        res.status(500).json({ status: 'erro', mensagem: error.message || 'Erro ao criar usuários em lote' });
+      });
+  });
+};
+
 // PUT /usuarios/:id_usuario (admin ou próprio usuário)
 export const atualizarUsuario = async (req: Request, res: Response): Promise<void> => {
   try {

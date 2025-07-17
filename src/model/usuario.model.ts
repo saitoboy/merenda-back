@@ -39,6 +39,15 @@ export const criar = async (usuario: Omit<Usuario, 'id_usuario'>): Promise<strin
   return id;
 };
 
+// Criar usuários em lote
+export const criarEmLote = async (usuarios: Array<Omit<any, 'id_usuario'>>): Promise<string[]> => {
+  const results = await connection('usuario')
+    .insert(usuarios)
+    .returning('id_usuario');
+  // Garante array de ids
+  return results.map(r => r.id_usuario || r);
+};
+
 // Atualizar usuário
 export const atualizar = async (id_usuario: string, dados: Partial<Usuario>): Promise<void> => {
   await connection(table)
