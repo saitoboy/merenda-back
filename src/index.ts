@@ -20,6 +20,7 @@ import fotoPerfilRouter from './routes/foto-perfil.routes';
 import usuarioRouter from './routes/usuario.routes';
 import ramalRouter from './routes/ramal.routes';
 import auditoriaPedidoRouter from './routes/auditoria-pedido.routes';
+import pedidoEscolaRouter from './routes/pedido-escola.routes';
 
 const app = express();
 
@@ -143,6 +144,9 @@ logger.debug('Rotas de ramais registradas', 'route');
 
 app.use('/auditoria-pedido', auditoriaPedidoRouter);
 logger.debug('Rotas de auditoria de pedido registradas', 'route');
+
+app.use('/pedido-escola', pedidoEscolaRouter);
+logger.debug('Rotas de pedido-escola registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 

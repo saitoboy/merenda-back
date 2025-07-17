@@ -184,6 +184,14 @@ class MigrationRunner {
                     return parseInt(tipoPedidoColumn.rows[0].count) === 0;
                 }
                 
+                case '016_create_pedido_escola_table.sql': {
+                    // Verifica se a tabela pedido_escola já existe
+                    const pedidoEscolaTable = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'pedido_escola')"
+                    );
+                    return !pedidoEscolaTable.rows[0].exists;
+                }
+                
                 default:
                     return true; // Se não souber, tenta executar
             }

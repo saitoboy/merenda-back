@@ -338,3 +338,20 @@ export interface Ramal {
   nome_ramal: string;
   escolas?: Escola[];
 }
+
+// Auditoria de lançamento de estoque por escola
+export interface PedidoEscola {
+  id_pedido_escola: string; // UUID
+  created_by: string; // nome da escola
+  created_at: Date;
+  id_periodo: string; // UUID do período ativo
+  id_usuario: string; // UUID do usuário responsável
+  id_escola: string; // UUID da escola
+}
+
+export interface CriarPedidoEscola {
+  created_by: string;
+  id_periodo: string;
+  id_usuario: string;
+  id_escola: string;
+}
