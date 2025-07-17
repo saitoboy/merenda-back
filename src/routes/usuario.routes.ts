@@ -7,7 +7,7 @@ import { TipoUsuario } from '../types';
 const usuarioRouter = Router();
 
 // Listar todos os usuários (apenas ADMIN)
-usuarioRouter.get('/', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.listarUsuarios);
+usuarioRouter.get('/', autenticar, autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), UsuarioController.listarUsuarios);
 
 // Buscar usuário por ID (admin ou próprio usuário)
 usuarioRouter.get('/:id_usuario', autenticar, UsuarioController.buscarUsuarioPorId);

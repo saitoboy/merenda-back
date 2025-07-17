@@ -60,7 +60,7 @@ export const alterarSenhaUsuario = async (req: Request, res: Response): Promise<
 export const listarUsuarios = async (req: Request, res: Response): Promise<void> => {
   try {
     const usuarioAuth = req.usuario;
-    if (!usuarioAuth || usuarioAuth.tipo !== TipoUsuario.ADMIN) {
+    if (!usuarioAuth || (usuarioAuth.tipo !== TipoUsuario.ADMIN && usuarioAuth.tipo !== TipoUsuario.NUTRICIONISTA)) {
       res.status(403).json({ status: 'erro', mensagem: 'Acesso negado' });
       return;
     }
