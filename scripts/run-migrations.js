@@ -324,13 +324,15 @@ class MigrationRunner {
             this.showFinalReport(executed, skipped, errors, migrationFiles, executed > 0 ? migrationFiles[migrationFiles.length - 1] : null);
 
             // 5. Verificação das tabelas essenciais
-            const missingTables = await this.checkEssentialTables();
-            if (missingTables.length === 0) {
-                console.log('🟢 Todas as tabelas essenciais foram criadas com sucesso!');
-            } else {
-                console.log('🔴 Atenção: As seguintes tabelas essenciais NÃO foram encontradas:');
-                missingTables.forEach(tbl => console.log('   • ' + tbl));
-                console.log('💡 Verifique as migrations e o banco de dados.');
+            if (executed > 0) {
+                const missingTables = await this.checkEssentialTables();
+                if (missingTables.length === 0) {
+                    console.log('🟢 Todas as tabelas essenciais foram criadas com sucesso!');
+                } else {
+                    console.log('🔴 Atenção: As seguintes tabelas essenciais NÃO foram encontradas:');
+                    missingTables.forEach(tbl => console.log('   • ' + tbl));
+                    console.log('💡 Verifique as migrations e o banco de dados.');
+                }
             }
             
         } catch (error) {
