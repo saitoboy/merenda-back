@@ -8,7 +8,7 @@ export const buscarPorId = async (id_usuario: string): Promise<Usuario | undefin
   const usuario = await connection(table)
     .where({ id_usuario })
     .first();
-  
+
   return usuario;
 };
 
@@ -17,7 +17,7 @@ export const buscarPorEmail = async (email_usuario: string): Promise<Usuario | u
   const usuario = await connection(table)
     .where({ email_usuario })
     .first();
-  
+
   return usuario;
 };
 
@@ -26,17 +26,22 @@ export const buscarPorEscola = async (id_escola: string): Promise<Usuario[]> => 
   const usuarios = await connection(table)
     .where({ id_escola })
     .select('*');
-  
+
   return usuarios;
 };
 
 // Criar novo usuário
 export const criar = async (usuario: Omit<Usuario, 'id_usuario'>): Promise<string> => {
-  const [id] = await connection(table)
+  const [result] = await connection(table)
     .insert(usuario)
     .returning('id_usuario');
-  
-  return id;
+
+  // Verificar se o resultado é um objeto ou string
+  if (typeof result === 'object' && result !== null) {
+    return result.id_usuario || result;
+  }
+
+  return result;
 };
 
 // Criar usuários em lote
@@ -73,6 +78,6 @@ export const alterarSenha = async (id_usuario: string, nova_senha: string): Prom
 export const listarTodos = async (): Promise<Usuario[]> => {
   const usuarios = await connection(table)
     .select('*');
-  
+
   return usuarios;
 };
