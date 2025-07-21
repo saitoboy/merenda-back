@@ -158,12 +158,64 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
     const dadosEstoque = req.body;
 
     // Validações básicas
-    if (!dadosEstoque.id_escola || !dadosEstoque.id_item || !dadosEstoque.quantidade_item || !dadosEstoque.numero_ideal) {
+    if (!dadosEstoque.id_escola) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Escola, item, quantidade e número ideal são obrigatórios'
+        mensagem: 'ID da escola é obrigatório'
       });
       return;
+    }
+
+    if (!dadosEstoque.id_item) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do item é obrigatório'
+      });
+      return;
+    }
+
+    if (!dadosEstoque.id_segmento) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do segmento é obrigatório'
+      });
+      return;
+    }
+
+    if (!dadosEstoque.id_periodo) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do período é obrigatório'
+      });
+      return;
+    }
+
+    // Validar quantidade (permite zero)
+    if (dadosEstoque.quantidade_item === undefined || dadosEstoque.quantidade_item === null) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Quantidade é obrigatória'
+      });
+      return;
+    }
+
+    if (typeof dadosEstoque.quantidade_item !== 'number' || dadosEstoque.quantidade_item < 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Quantidade deve ser um número maior ou igual a zero'
+      });
+      return;
+    }
+
+    // Validar número ideal (permite zero, mas não obrigatório)
+    if (dadosEstoque.numero_ideal !== undefined) {
+      if (typeof dadosEstoque.numero_ideal !== 'number' || dadosEstoque.numero_ideal < 0) {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Número ideal deve ser um número maior ou igual a zero'
+        });
+        return;
+      }
     }
 
     const resultado = await criarItemEstoque(dadosEstoque);
@@ -171,9 +223,15 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
     res.status(201).json({
       status: 'sucesso',
       mensagem: 'Item adicionado ao estoque com sucesso',
-      dados: resultado
+      dados: {
+        id_estoque: resultado,
+        quantidade_adicionada: dadosEstoque.quantidade_item,
+        numero_ideal: dadosEstoque.numero_ideal || 0
+      }
     });
   } catch (error) {
+    logError('Erro ao adicionar item ao estoque', 'controller', error);
+
     if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',

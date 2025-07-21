@@ -3,14 +3,15 @@ import * as EscolaModel from '../model/escola.model';
 import * as ItemModel from '../model/item.model';
 import * as SegmentoModel from '../model/segmento.model';
 import * as PeriodoModel from '../model/periodo-lancamento.model';
+import * as EscolaSegmentoModel from '../model/escola-segmento.model';
 import connection from '../connection';
 import { logInfo, logError, logWarning } from '../utils/logger';
-import { 
-  Estoque, 
-  CriarEstoque, 
-  AtualizarEstoque, 
+import {
+  Estoque,
+  CriarEstoque,
+  AtualizarEstoque,
   FiltroEstoque,
-  EstoqueCompleto 
+  EstoqueCompleto
 } from '../types';
 
 // =====================================
@@ -27,7 +28,7 @@ export const duplicarEstoquesParaNovoPeriodo = async (
   periodo_destino: string;
 }> => {
   const trx = await connection.transaction();
-  
+
   try {
     logInfo(`Iniciando duplicação de estoques para período ${idNovoPeriodo}`, 'service');
 
@@ -87,7 +88,7 @@ export const duplicarEstoquesParaNovoPeriodo = async (
       .where('id_periodo', periodoOrigemId)
       .select([
         'id_escola',
-        'id_item', 
+        'id_item',
         'id_segmento',
         'quantidade_item',
         'numero_ideal',
@@ -139,7 +140,7 @@ export const duplicarEstoquesParaNovoPeriodo = async (
   } catch (error) {
     await trx.rollback();
     logError('Erro ao duplicar estoques para novo período', 'service', error);
-    
+
     if (error instanceof Error) {
       throw new Error(`Erro ao duplicar estoques: ${error.message}`);
     } else {
@@ -153,7 +154,7 @@ export const duplicarEstoquesParaNovoPeriodo = async (
 // =====================================
 
 export const buscarEstoquePorEscola = async (
-  idEscola: string, 
+  idEscola: string,
   filtros?: {
     idSegmento?: string;
     idPeriodo?: string;
@@ -181,7 +182,7 @@ export const buscarEstoquePorEscola = async (
 
     // Buscar estoque com dados relacionados
     const estoque = await EstoqueModel.buscarDetalhesEstoquePorEscola(idEscola, filtroEstoque);
-    
+
     return estoque;
   } catch (error) {
     if (error instanceof Error) {
@@ -195,11 +196,11 @@ export const buscarEstoquePorEscola = async (
 export const buscarEstoquePorId = async (idEstoque: string): Promise<Estoque> => {
   try {
     const estoque = await EstoqueModel.buscarPorId(idEstoque);
-    
+
     if (!estoque) {
       throw new Error('Item de estoque não encontrado');
     }
-    
+
     return estoque;
   } catch (error) {
     if (error instanceof Error) {
@@ -230,7 +231,7 @@ export const buscarItensAbaixoIdeal = async (
 
     // Buscar itens abaixo do ideal
     const itensAbaixoIdeal = await EstoqueModel.buscarItensAbaixoIdeal(idEscola, filtroEstoque);
-    
+
     return itensAbaixoIdeal;
   } catch (error) {
     if (error instanceof Error) {
@@ -262,7 +263,7 @@ export const buscarItensProximosValidade = async (
 
     // Buscar itens próximos da validade
     const itensProximos = await EstoqueModel.buscarProximosValidade(idEscola, dias, filtroEstoque);
-    
+
     return itensProximos;
   } catch (error) {
     if (error instanceof Error) {
@@ -297,6 +298,14 @@ export const criarItemEstoque = async (dados: CriarEstoque): Promise<string> => 
       throw new Error('Segmento não encontrado');
     }
 
+    // Validar se o segmento está associado à escola
+    const segmentosEscola = await EscolaSegmentoModel.buscarSegmentosPorEscola(dados.id_escola);
+    const segmentoExisteNaEscola = segmentosEscola.some(seg => seg.id_segmento === dados.id_segmento);
+
+    if (!segmentoExisteNaEscola) {
+      throw new Error('Este segmento não está disponível para a escola informada');
+    }
+
     // Validar se período existe
     const periodo = await PeriodoModel.buscarPorId(dados.id_periodo);
     if (!periodo) {
@@ -315,9 +324,25 @@ export const criarItemEstoque = async (dados: CriarEstoque): Promise<string> => 
       throw new Error('Já existe estoque para esta combinação de escola, item, segmento e período');
     }
 
+    // Validar dados numéricos (permitir zero)
+    if (dados.quantidade_item < 0) {
+      throw new Error('Quantidade não pode ser negativa');
+    }
+
+    if (dados.numero_ideal !== undefined && dados.numero_ideal < 0) {
+      throw new Error('Número ideal não pode ser negativo');
+    }
+
     // Criar o item de estoque
     const idEstoque = await EstoqueModel.criar(dados);
-    
+
+    logInfo(`Item criado no estoque: ${idEstoque}`, 'service', {
+      escola: dados.id_escola,
+      item: dados.id_item,
+      segmento: dados.id_segmento,
+      quantidade: dados.quantidade_item
+    });
+
     return idEstoque;
   } catch (error) {
     if (error instanceof Error) {
@@ -575,7 +600,7 @@ export const obterResumoDashboard = async (idEscola: string) => {
 export const atualizarDataValidade = async (idEstoque: string, validade: Date | string) => {
   try {
     logInfo(`Iniciando atualização de validade para estoque: ${idEstoque}`, 'service');
-    
+
     // Verificar se o item de estoque existe
     const estoqueExistente = await EstoqueModel.buscarPorId(idEstoque);
     if (!estoqueExistente) {
@@ -588,7 +613,7 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
     // Normalizar horário para comparação de datas (zerar horas)
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-    
+
     // Criar data de validade segura para strings YYYY-MM-DD
     let dataValidade: Date;
     if (typeof validade === 'string' && validade.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -598,12 +623,12 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
     } else {
       dataValidade = new Date(validade);
     }
-    
+
     // Normalizar horário da data de validade
     dataValidade.setHours(0, 0, 0, 0);
-    
+
     logInfo(`Data normalizada: ${dataValidade.toDateString()}, Hoje: ${hoje.toDateString()}`, 'service');
-    
+
     // Validar se a data não é no passado
     if (dataValidade < hoje) {
       logWarning(`Data no passado rejeitada: ${dataValidade.toDateString()}`, 'service');
@@ -615,16 +640,16 @@ export const atualizarDataValidade = async (idEstoque: string, validade: Date | 
 
     // Atualizar a data de validade
     const sucesso = await EstoqueModel.atualizarValidade(idEstoque, dataValidade);
-    
+
     if (!sucesso) {
       logError(`Falha ao atualizar data de validade no banco: ${idEstoque}`, 'service');
       throw new Error('Falha ao atualizar data de validade');
     }
 
     // Formatação consistente - sempre retornar YYYY-MM-DD
-    const novaValidadeFormatada = dataValidade.getFullYear() + '-' + 
-                                 String(dataValidade.getMonth() + 1).padStart(2, '0') + '-' + 
-                                 String(dataValidade.getDate()).padStart(2, '0');
+    const novaValidadeFormatada = dataValidade.getFullYear() + '-' +
+      String(dataValidade.getMonth() + 1).padStart(2, '0') + '-' +
+      String(dataValidade.getDate()).padStart(2, '0');
 
     logInfo(`Validade atualizada com sucesso: ${idEstoque} -> ${novaValidadeFormatada}`, 'service');
 
