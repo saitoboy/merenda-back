@@ -61,7 +61,7 @@ estoqueRouter.patch('/atualizar/:id_estoque',
 
 estoqueRouter.delete('/:id_estoque', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.removerItemDoEstoque
 );
 
