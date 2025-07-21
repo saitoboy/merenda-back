@@ -70,3 +70,12 @@ export const deletarRamal = async (id_ramal: string): Promise<void> => {
     throw error;
   }
 };
+
+export const buscarEscolasPorRamal = async (id_ramal: string): Promise<Escola[]> => {
+  try {
+    return await connection(tableEscola).where('ramal_id', id_ramal).select('*');
+  } catch (error) {
+    logError('Erro ao buscar escolas por ramal', 'ramal.service', error);
+    throw new Error('Erro ao buscar escolas por ramal');
+  }
+};
