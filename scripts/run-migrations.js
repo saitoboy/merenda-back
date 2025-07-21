@@ -211,6 +211,19 @@ class MigrationRunner {
                     return !(isSetNull && isNullable);
                 }
                 
+                case '018_alter_ramal_id_default_uuid.sql': {
+                    // Verifica se a coluna id_ramal já tem default gen_random_uuid
+                    const column = await this.pool.query(`
+                        SELECT column_default FROM information_schema.columns
+                        WHERE table_name = 'ramal' AND column_name = 'id_ramal'
+                    `);
+                    const hasDefault = column.rows.length > 0 && column.rows[0].column_default && column.rows[0].column_default.includes('gen_random_uuid');
+                    // Verifica se a extensão pgcrypto existe
+                    const ext = await this.pool.query(`SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto'`);
+                    const hasPgcrypto = ext.rows.length > 0;
+                    return !(hasDefault && hasPgcrypto);
+                }
+                
                 default:
                     return true; // Se não souber, tenta executar
             }
@@ -308,7 +321,7 @@ class MigrationRunner {
             }
 
             // 4. Relatório final
-            this.showFinalReport(executed, skipped, errors, migrationFiles);
+            this.showFinalReport(executed, skipped, errors, migrationFiles, executed > 0 ? migrationFiles[migrationFiles.length - 1] : null);
 
             // 5. Verificação das tabelas essenciais
             const missingTables = await this.checkEssentialTables();
@@ -368,33 +381,25 @@ class MigrationRunner {
         }
     }
 
-    showFinalReport(executed, skipped, errors, migrationFiles) {
+    showFinalReport(executed, skipped, errors, migrationFiles, lastExecuted) {
         console.log('📊 RELATÓRIO FINAL:');
         console.log('='.repeat(30));
         console.log(`✅ Executadas: ${executed}`);
         console.log(`⏭️  Puladas: ${skipped}`);
         console.log(`❌ Erros: ${errors}`);
         console.log('');
-        console.log('📋 Status de cada migration:');
-        migrationFiles.forEach((file, idx) => {
-            // Aqui você pode customizar para mostrar status detalhado se quiser
-            // Exemplo: apenas lista o nome
-            console.log(`   • ${file}`);
-        });
+        if (executed > 0) {
+            console.log('📋 Migration executada nesta execução:');
+            if (lastExecuted) {
+                console.log(`   • ${lastExecuted}`);
+            }
+        } else {
+            console.log('⏭️  Nenhuma migration foi executada. Todas já estavam aplicadas.');
+        }
         console.log('');
         if (errors === 0) {
             console.log('🎉 NORMALIZAÇÃO CONCLUÍDA COM SUCESSO!');
             console.log('✅ Banco de dados normalizado e pronto para uso!');
-            console.log('');
-            console.log('📋 Estruturas criadas:');
-            console.log('   • Tabela segmento (4 segmentos padrão)');
-            console.log('   • Tabela periodo_lancamento (períodos globais)');
-            console.log('   • Tabela escola_segmento (relacionamento N:N)');
-            console.log('   • Colunas normalizadas na tabela estoque');
-            console.log('   • Foreign Keys e constraints de integridade');
-            console.log('   • Índices para otimização de performance');
-            console.log('   • Período de teste junho/2025 inserido');
-            console.log('   • Limpeza de colunas obsoletas (segmento_estoque)');
         } else {
             console.log('⚠️  Algumas migrations falharam.');
             console.log('💡 Verifique os erros acima e execute novamente se necessário.');
