@@ -30,7 +30,7 @@ jobs:
           docker build \
             -t ghcr.io/${{ github.repository_owner }}/backend-merenda:latest \
             -f ./back/Dockerfile \
-            ./back
+            ./
 
       - name: Push Docker image to GHCR
         run: |
