@@ -30,7 +30,7 @@ estoqueRouter.post('/ideais/:id_escola',
 // Rotas para operações de estoque (protegidas)
 estoqueRouter.post('/adicionar', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.adicionarItemAoEstoque
 );
 
@@ -53,9 +53,15 @@ estoqueRouter.put('/validade/:id_estoque',
   EstoqueController.atualizarDataValidade
 );
 
+estoqueRouter.patch('/atualizar/:id_estoque', 
+  autenticar, 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA, TipoUsuario.NUTRICIONISTA]), 
+  EstoqueController.atualizarEstoque
+);
+
 estoqueRouter.delete('/:id_estoque', 
   autenticar, 
-  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.ESCOLA]), 
+  autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), 
   EstoqueController.removerItemDoEstoque
 );
 

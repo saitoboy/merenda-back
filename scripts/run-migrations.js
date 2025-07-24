@@ -102,11 +102,11 @@ class MigrationRunner {
                     `);
                     return parseInt(hasIndexes.rows[0].count) < 5;
 
-                case '009_insert_test_period.sql':
-                    const hasTestPeriod = await this.pool.query(
-                        'SELECT COUNT(*) FROM periodo_lancamento WHERE mes = 6 AND ano = 2025'
+                case '009_create_password_reset_otp_table.sql':
+                    const otpTableExists = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'password_reset_otp')"
                     );
-                    return parseInt(hasTestPeriod.rows[0].count) === 0;
+                    return !otpTableExists.rows[0].exists;
 
                 case '010_cleanup_estoque_table.sql':
                     const hasOldColumn = await this.pool.query(`
@@ -169,6 +169,60 @@ class MigrationRunner {
                     // Se tudo existe e está associado, não precisa rodar
                     return false;
                 }
+
+                case '014_create_auditoria_pedido_table.sql':
+                    const auditoriaPedidoExists = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'auditoria_pedido')"
+                    );
+                    return !auditoriaPedidoExists.rows[0].exists;
+                
+                case '015_add_tipo_pedido_to_auditoria_pedido.sql': {
+                    // Verifica se a coluna tipo_pedido já existe
+                    const tipoPedidoColumn = await this.pool.query(
+                        "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'auditoria_pedido' AND column_name = 'tipo_pedido'"
+                    );
+                    return parseInt(tipoPedidoColumn.rows[0].count) === 0;
+                }
+                
+                case '016_create_pedido_escola_table.sql': {
+                    // Verifica se a tabela pedido_escola já existe
+                    const pedidoEscolaTable = await this.pool.query(
+                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'pedido_escola')"
+                    );
+                    return !pedidoEscolaTable.rows[0].exists;
+                }
+                
+                case '017_alter_periodo_lancamento_criado_por_nullable.sql': {
+                    // Verifica se a constraint já está ON DELETE SET NULL e se criado_por é nullable
+                    const constraint = await this.pool.query(`
+                        SELECT conname, confdeltype
+                        FROM pg_constraint
+                        WHERE conname = 'periodo_lancamento_criado_por_fkey'
+                          AND conrelid = 'periodo_lancamento'::regclass
+                    `);
+                    const column = await this.pool.query(`
+                        SELECT is_nullable
+                        FROM information_schema.columns
+                        WHERE table_name = 'periodo_lancamento' AND column_name = 'criado_por'
+                    `);
+                    // confdeltype = 'n' significa ON DELETE SET NULL
+                    const isSetNull = constraint.rows.length > 0 && constraint.rows[0].confdeltype === 'n';
+                    const isNullable = column.rows.length > 0 && column.rows[0].is_nullable === 'YES';
+                    return !(isSetNull && isNullable);
+                }
+                
+                case '018_alter_ramal_id_default_uuid.sql': {
+                    // Verifica se a coluna id_ramal já tem default gen_random_uuid
+                    const column = await this.pool.query(`
+                        SELECT column_default FROM information_schema.columns
+                        WHERE table_name = 'ramal' AND column_name = 'id_ramal'
+                    `);
+                    const hasDefault = column.rows.length > 0 && column.rows[0].column_default && column.rows[0].column_default.includes('gen_random_uuid');
+                    // Verifica se a extensão pgcrypto existe
+                    const ext = await this.pool.query(`SELECT 1 FROM pg_extension WHERE extname = 'pgcrypto'`);
+                    const hasPgcrypto = ext.rows.length > 0;
+                    return !(hasDefault && hasPgcrypto);
+                }
                 
                 default:
                     return true; // Se não souber, tenta executar
@@ -176,6 +230,33 @@ class MigrationRunner {
         } catch (error) {
             return true; // Se der erro na verificação, tenta executar
         }
+    }
+
+    async checkEssentialTables() {
+        const essentialTables = [
+            'segmento',
+            'periodo_lancamento',
+            'escola_segmento',
+            'estoque',
+            'password_reset_otp',
+            'auditoria_pedido',
+            'ramal',
+            'usuario',
+            'escola',
+            'pedido'
+        ];
+        const missing = [];
+        for (const table of essentialTables) {
+            try {
+                const res = await this.pool.query(
+                    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)`, [table]
+                );
+                if (!res.rows[0].exists) missing.push(table);
+            } catch (err) {
+                missing.push(table);
+            }
+        }
+        return missing;
     }
 
     async run() {
@@ -240,7 +321,19 @@ class MigrationRunner {
             }
 
             // 4. Relatório final
-            this.showFinalReport(executed, skipped, errors);
+            this.showFinalReport(executed, skipped, errors, migrationFiles, executed > 0 ? migrationFiles[migrationFiles.length - 1] : null);
+
+            // 5. Verificação das tabelas essenciais
+            if (executed > 0) {
+                const missingTables = await this.checkEssentialTables();
+                if (missingTables.length === 0) {
+                    console.log('🟢 Todas as tabelas essenciais foram criadas com sucesso!');
+                } else {
+                    console.log('🔴 Atenção: As seguintes tabelas essenciais NÃO foram encontradas:');
+                    missingTables.forEach(tbl => console.log('   • ' + tbl));
+                    console.log('💡 Verifique as migrations e o banco de dados.');
+                }
+            }
             
         } catch (error) {
             console.error('❌ Erro fatal:', error.message);
@@ -290,27 +383,25 @@ class MigrationRunner {
         }
     }
 
-    showFinalReport(executed, skipped, errors) {
+    showFinalReport(executed, skipped, errors, migrationFiles, lastExecuted) {
         console.log('📊 RELATÓRIO FINAL:');
         console.log('='.repeat(30));
         console.log(`✅ Executadas: ${executed}`);
         console.log(`⏭️  Puladas: ${skipped}`);
         console.log(`❌ Erros: ${errors}`);
         console.log('');
-        
+        if (executed > 0) {
+            console.log('📋 Migration executada nesta execução:');
+            if (lastExecuted) {
+                console.log(`   • ${lastExecuted}`);
+            }
+        } else {
+            console.log('⏭️  Nenhuma migration foi executada. Todas já estavam aplicadas.');
+        }
+        console.log('');
         if (errors === 0) {
             console.log('🎉 NORMALIZAÇÃO CONCLUÍDA COM SUCESSO!');
             console.log('✅ Banco de dados normalizado e pronto para uso!');
-            console.log('');
-            console.log('📋 Estruturas criadas:');
-            console.log('   • Tabela segmento (4 segmentos padrão)');
-            console.log('   • Tabela periodo_lancamento (períodos globais)');
-            console.log('   • Tabela escola_segmento (relacionamento N:N)');
-            console.log('   • Colunas normalizadas na tabela estoque');
-            console.log('   • Foreign Keys e constraints de integridade');
-            console.log('   • Índices para otimização de performance');
-            console.log('   • Período de teste junho/2025 inserido');
-            console.log('   • Limpeza de colunas obsoletas (segmento_estoque)');
         } else {
             console.log('⚠️  Algumas migrations falharam.');
             console.log('💡 Verifique os erros acima e execute novamente se necessário.');

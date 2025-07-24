@@ -68,3 +68,13 @@ export const remover = async (id_ramal: string): Promise<void> => {
     throw error;
   }
 };
+
+// Buscar escolas associadas a um ramal
+export const buscarEscolasPorRamal = async (id_ramal: string): Promise<Escola[]> => {
+  try {
+    return await connection(tableEscola).where('ramal_id', id_ramal).select('*');
+  } catch (error) {
+    logError('Erro ao buscar escolas por ramal', 'ramal.model', error);
+    throw error;
+  }
+};

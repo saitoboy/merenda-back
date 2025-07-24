@@ -1,6 +1,6 @@
 import connection from '../connection';
 import { logError } from '../utils/logger';
-import { Estoque, CriarEstoque, AtualizarEstoque, EstoqueCompleto, FiltroEstoque } from '../types';
+import { Estoque, CriarEstoque, AtualizarEstoque, EstoqueCompleto, FiltroEstoque, Segmento } from '../types';
 
 const table = 'estoque';
 
@@ -15,8 +15,32 @@ export const buscarPorId = async (id_estoque: string): Promise<Estoque | undefin
   const estoqueItem = await connection(table)
     .where({ id_estoque })
     .first();
-  
+
   return estoqueItem;
+};
+
+// Buscar segmentos associados a uma escola
+export const buscarSegmentosPorEscola = async (id_escola: string): Promise<Segmento[]> => {
+  const segmentos = await connection(table)
+    .join('segmento', 'escola_segmento.id_segmento', '=', 'segmento.id_segmento')
+    .where('escola_segmento.id_escola', id_escola)
+    .select(
+      'segmento.id_segmento',
+      'segmento.nome_segmento',
+      'segmento.descricao_segmento'
+    );
+
+  return segmentos;
+};
+
+// Verificar se segmento existe para uma escola
+export const verificarSegmentoNaEscola = async (id_escola: string, id_segmento: string): Promise<boolean> => {
+  const resultado = await connection(table)
+    .where({ id_escola, id_segmento })
+    .count('* as total')
+    .first();
+
+  return Number(resultado?.total || 0) > 0;
 };
 
 // Buscar item de estoque por chaves compostas (escola, item, segmento, período)
@@ -24,7 +48,7 @@ export const buscar = async (id_escola: string, id_item: string, id_segmento: st
   const estoqueItem = await connection(table)
     .where({ id_escola, id_item, id_segmento, id_periodo })
     .first();
-  
+
   return estoqueItem;
 };
 
@@ -32,30 +56,30 @@ export const buscar = async (id_escola: string, id_item: string, id_segmento: st
 export const buscarPorEscola = async (id_escola: string, filtros?: FiltroEstoque): Promise<Estoque[]> => {
   let query = connection(table)
     .where({ id_escola });
-  
+
   // Aplicar filtros adicionais se fornecidos
   if (filtros?.id_segmento) {
     query = query.andWhere('id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros?.id_periodo) {
     query = query.andWhere('id_periodo', filtros.id_periodo);
   }
-  
+
   if (filtros?.id_item) {
     query = query.andWhere('id_item', filtros.id_item);
   }
-  
+
   if (filtros?.quantidade_minima) {
     query = query.andWhere('quantidade_item', '>=', filtros.quantidade_minima);
   }
-  
+
   if (filtros?.validade_proxima) {
     query = query.andWhere('validade', '<=', filtros.validade_proxima);
   }
-  
+
   const estoqueItens = await query.select('*');
-  
+
   return estoqueItens;
 };
 
@@ -67,28 +91,28 @@ export const buscarDetalhesEstoquePorEscola = async (id_escola: string, filtros?
     .join('segmento', 'estoque.id_segmento', '=', 'segmento.id_segmento')
     .join('periodo_lancamento', 'estoque.id_periodo', '=', 'periodo_lancamento.id_periodo')
     .where('estoque.id_escola', id_escola);
-  
+
   // Aplicar filtros se fornecidos
   if (filtros?.id_segmento) {
     query = query.andWhere('estoque.id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros?.id_periodo) {
     query = query.andWhere('estoque.id_periodo', filtros.id_periodo);
   }
-  
+
   if (filtros?.id_item) {
     query = query.andWhere('estoque.id_item', filtros.id_item);
   }
-  
+
   if (filtros?.quantidade_minima) {
     query = query.andWhere('estoque.quantidade_item', '>=', filtros.quantidade_minima);
   }
-  
+
   if (filtros?.validade_proxima) {
     query = query.andWhere('estoque.validade', '<=', filtros.validade_proxima);
   }
-  
+
   const estoqueDetalhado = await query.select(
     'estoque.*',
     'item.nome_item',
@@ -100,7 +124,7 @@ export const buscarDetalhesEstoquePorEscola = async (id_escola: string, filtros?
     'periodo_lancamento.ano',
     'periodo_lancamento.data_referencia'
   );
-  
+
   return estoqueDetalhado;
 };
 
@@ -113,16 +137,16 @@ export const buscarItensAbaixoIdeal = async (id_escola: string, filtros?: Filtro
     .join('periodo_lancamento', 'estoque.id_periodo', '=', 'periodo_lancamento.id_periodo')
     .where('estoque.id_escola', id_escola)
     .andWhereRaw('estoque.quantidade_item < estoque.numero_ideal');
-  
+
   // Aplicar filtros adicionais se fornecidos
   if (filtros?.id_segmento) {
     query = query.andWhere('estoque.id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros?.id_periodo) {
     query = query.andWhere('estoque.id_periodo', filtros.id_periodo);
   }
-  
+
   const itensAbaixoIdeal = await query.select(
     'estoque.*',
     'item.nome_item',
@@ -134,7 +158,7 @@ export const buscarItensAbaixoIdeal = async (id_escola: string, filtros?: Filtro
     'periodo_lancamento.ano',
     'periodo_lancamento.data_referencia'
   );
-  
+
   return itensAbaixoIdeal;
 };
 
@@ -143,7 +167,7 @@ export const criar = async (estoque: CriarEstoque): Promise<string> => {
   const [result] = await connection(table)
     .insert(estoque)
     .returning('id_estoque');
-  
+
   return result.id_estoque;
 };
 
@@ -172,17 +196,17 @@ export const atualizar = async (id_estoque: string, dados: AtualizarEstoque): Pr
 export const atualizarValidade = async (id_estoque: string, validade: Date): Promise<boolean> => {
   try {
     // Formatação manual para evitar problemas de fuso horário
-    const dataFormatada = validade.getFullYear() + '-' + 
-                         String(validade.getMonth() + 1).padStart(2, '0') + '-' + 
-                         String(validade.getDate()).padStart(2, '0');
-    
+    const dataFormatada = validade.getFullYear() + '-' +
+      String(validade.getMonth() + 1).padStart(2, '0') + '-' +
+      String(validade.getDate()).padStart(2, '0');
+
     const updated = await connection(table)
       .where({ id_estoque })
-      .update({ 
+      .update({
         validade: dataFormatada,
         atualizado_em: new Date()
       });
-    
+
     return updated > 0;
   } catch (error) {
     logError('Erro ao atualizar validade no banco', 'model', error);
@@ -200,23 +224,23 @@ export const remover = async (id_estoque: string): Promise<void> => {
 // Remover itens de estoque por filtros
 export const removerPorFiltros = async (filtros: FiltroEstoque): Promise<void> => {
   let query = connection(table);
-  
+
   if (filtros.id_escola) {
     query = query.where('id_escola', filtros.id_escola);
   }
-  
+
   if (filtros.id_segmento) {
     query = query.andWhere('id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros.id_periodo) {
     query = query.andWhere('id_periodo', filtros.id_periodo);
   }
-  
+
   if (filtros.id_item) {
     query = query.andWhere('id_item', filtros.id_item);
   }
-  
+
   await query.delete();
 };
 
@@ -224,37 +248,37 @@ export const removerPorFiltros = async (filtros: FiltroEstoque): Promise<void> =
 export const obterMetricasEstoque = async (id_escola: string, filtros?: FiltroEstoque) => {
   let baseQuery = connection(table)
     .where('id_escola', id_escola);
-  
+
   // Aplicar filtros se fornecidos
   if (filtros?.id_segmento) {
     baseQuery = baseQuery.andWhere('id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros?.id_periodo) {
     baseQuery = baseQuery.andWhere('id_periodo', filtros.id_periodo);
   }
-  
+
   const totalItens = await baseQuery.clone()
     .count('* as total')
     .first();
-  
+
   const abaixoIdeal = await baseQuery.clone()
     .whereRaw('quantidade_item < numero_ideal')
     .count('* as total')
     .first();
-    
+
   // Buscar itens próximos da validade (próximos 7 dias)
   const dataAtual = new Date();
   const dataLimite = new Date();
   dataLimite.setDate(dataLimite.getDate() + 7);
-  
+
   const proximosValidade = await baseQuery.clone()
     .andWhere('validade', '<=', dataLimite)
     .andWhere('validade', '>=', dataAtual)
     .whereNotNull('validade')
     .count('* as total')
     .first();
-  
+
   return {
     total_itens: Number(totalItens?.total || 0),
     itens_baixo_estoque: Number(abaixoIdeal?.total || 0),
@@ -267,11 +291,11 @@ export const obterMetricasPorSegmento = async (id_escola: string, id_periodo?: s
   let query = connection(table)
     .join('segmento', 'estoque.id_segmento', '=', 'segmento.id_segmento')
     .where('estoque.id_escola', id_escola);
-  
+
   if (id_periodo) {
     query = query.andWhere('estoque.id_periodo', id_periodo);
   }
-  
+
   const metricas = await query
     .select(
       'segmento.id_segmento',
@@ -282,7 +306,7 @@ export const obterMetricasPorSegmento = async (id_escola: string, id_periodo?: s
     )
     .groupBy('segmento.id_segmento', 'segmento.nome_segmento')
     .orderBy('segmento.nome_segmento');
-  
+
   return metricas.map(m => ({
     id_segmento: m.id_segmento,
     nome_segmento: m.nome_segmento,
@@ -296,19 +320,19 @@ export const obterMetricasPorSegmento = async (id_escola: string, id_periodo?: s
 export const obterResumoDashboard = async (id_escola: string) => {
   // Métricas gerais
   const metricas = await obterMetricasEstoque(id_escola);
-  
+
   // Contar segmentos ativos
   const segmentosAtivos = await connection('escola_segmento')
     .where('id_escola', id_escola)
     .count('* as total')
     .first();
-  
+
   // Buscar período ativo
   const periodoAtivo = await connection('periodo_lancamento')
     .where('ativo', true)
     .select('mes', 'ano')
     .first();
-  
+
   return {
     ...metricas,
     segmentos_ativos: Number(segmentosAtivos?.total || 0),
@@ -347,7 +371,7 @@ export const definirIdeaisEmLote = async (ideais: Array<{
           .update({
             numero_ideal: ideal.numero_ideal
           });
-          
+
         resultados.push({
           id_estoque: itemExistente.id_estoque,
           ...ideal,
@@ -363,7 +387,7 @@ export const definirIdeaisEmLote = async (ideais: Array<{
           quantidade_item: 0, // Inicia com quantidade zero
           numero_ideal: ideal.numero_ideal
         }).returning('id_estoque');
-        
+
         resultados.push({
           id_estoque: result.id_estoque,
           ...ideal,
@@ -381,7 +405,7 @@ export const buscarProximosValidade = async (id_escola: string, dias: number, fi
   const dataAtual = new Date();
   const dataLimite = new Date();
   dataLimite.setDate(dataLimite.getDate() + dias);
-  
+
   let query = connection(table)
     .join('item', 'estoque.id_item', '=', 'item.id_item')
     .join('escola', 'estoque.id_escola', '=', 'escola.id_escola')
@@ -391,16 +415,16 @@ export const buscarProximosValidade = async (id_escola: string, dias: number, fi
     .andWhere('estoque.validade', '<=', dataLimite)
     .andWhere('estoque.validade', '>=', dataAtual)
     .whereNotNull('estoque.validade');
-  
+
   // Aplicar filtros adicionais se fornecidos
   if (filtros?.id_segmento) {
     query = query.andWhere('estoque.id_segmento', filtros.id_segmento);
   }
-  
+
   if (filtros?.id_periodo) {
     query = query.andWhere('estoque.id_periodo', filtros.id_periodo);
   }
-  
+
   const itensProximos = await query.select(
     'estoque.*',
     'item.nome_item',
@@ -413,7 +437,7 @@ export const buscarProximosValidade = async (id_escola: string, dias: number, fi
     'periodo_lancamento.data_referencia',
     connection.raw('(estoque.validade - CURRENT_DATE) as dias_restantes')
   ).orderBy('estoque.validade', 'asc');
-  
+
   return itensProximos;
 };
 
@@ -423,6 +447,6 @@ export const existe = async (id_estoque: string): Promise<boolean> => {
     .where({ id_estoque })
     .count('* as total')
     .first();
-  
+
   return Number(estoque?.total || 0) > 0;
 };

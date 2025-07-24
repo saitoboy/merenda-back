@@ -109,6 +109,77 @@ Cria um novo usuário no sistema.
 
 ---
 
+## Criar Usuários em Lote
+
+Cria múltiplos usuários de uma vez, útil para cadastrar todas as escolas rapidamente.
+
+**URL**: `/usuarios/lote`
+
+**Método**: `POST`
+
+**Autenticação**: Sim (apenas Admin)
+
+**Corpo da Requisição** (array de objetos):
+
+```json
+[
+  {
+    "nome_usuario": "CRECHE ALFREDO COUTO",
+    "email_usuario": "creacouto@gmail.com",
+    "senha_usuario": "@Merenda2025",
+    "tipo_usuario": "escola"
+  },
+  {
+    "nome_usuario": "E M ALZIRA CHAVES LACERDA",
+    "email_usuario": "emalzirachaveslacerda@edu.muriae.mg.gov.br",
+    "senha_usuario": "@Merenda2025",
+    "tipo_usuario": "escola"
+  }
+  // ... demais escolas ...
+]
+```
+
+- `nome_usuario`: Nome da escola
+- `email_usuario`: Email da escola
+- `senha_usuario`: Senha padrão (`@Merenda2025`)
+- `tipo_usuario`: Sempre "escola"
+
+### Resposta de Sucesso
+
+**Código**: `201 CREATED`
+
+```json
+{
+  "status": "sucesso",
+  "usuarios": [
+    {
+      "id_usuario": "uuid-usuario-1",
+      "nome_usuario": "CRECHE ALFREDO COUTO",
+      "email_usuario": "creacouto@gmail.com",
+      "tipo_usuario": "escola"
+    },
+    {
+      "id_usuario": "uuid-usuario-2",
+      "nome_usuario": "E M ALZIRA CHAVES LACERDA",
+      "email_usuario": "emalzirachaveslacerda@edu.muriae.mg.gov.br",
+      "tipo_usuario": "escola"
+    }
+    // ... demais escolas ...
+  ]
+}
+```
+
+### Resposta de Erro
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Erro ao criar usuários em lote"
+}
+```
+
+---
+
 ## Atualizar Usuário
 
 Atualiza os dados de um usuário existente.

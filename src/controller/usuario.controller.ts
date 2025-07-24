@@ -60,7 +60,7 @@ export const alterarSenhaUsuario = async (req: Request, res: Response): Promise<
 export const listarUsuarios = async (req: Request, res: Response): Promise<void> => {
   try {
     const usuarioAuth = req.usuario;
-    if (!usuarioAuth || usuarioAuth.tipo !== TipoUsuario.ADMIN) {
+    if (!usuarioAuth || (usuarioAuth.tipo !== TipoUsuario.ADMIN && usuarioAuth.tipo !== TipoUsuario.NUTRICIONISTA)) {
       res.status(403).json({ status: 'erro', mensagem: 'Acesso negado' });
       return;
     }
@@ -118,6 +118,19 @@ export const criarUsuario = async (req: Request, res: Response): Promise<void> =
     logger.error(`Erro ao criar usuário: ${error instanceof Error ? error.message : error}`);
     res.status(500).json({ status: 'erro', mensagem: 'Erro ao criar usuário' });
   }
+};
+
+// POST /usuarios/lote (apenas admin)
+export const criarUsuariosEmLote = (req: Request, res: Response) => {
+  import('../services/usuario.service').then(UsuarioService => {
+    UsuarioService.criarUsuariosEmLote(req.body)
+      .then(usuarios => {
+        res.status(201).json({ status: 'sucesso', usuarios });
+      })
+      .catch(error => {
+        res.status(500).json({ status: 'erro', mensagem: error.message || 'Erro ao criar usuários em lote' });
+      });
+  });
 };
 
 // PUT /usuarios/:id_usuario (admin ou próprio usuário)

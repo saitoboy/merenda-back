@@ -7,13 +7,16 @@ import { TipoUsuario } from '../types';
 const usuarioRouter = Router();
 
 // Listar todos os usuários (apenas ADMIN)
-usuarioRouter.get('/', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.listarUsuarios);
+usuarioRouter.get('/', autenticar, autorizarPor([TipoUsuario.ADMIN, TipoUsuario.NUTRICIONISTA]), UsuarioController.listarUsuarios);
 
 // Buscar usuário por ID (admin ou próprio usuário)
 usuarioRouter.get('/:id_usuario', autenticar, UsuarioController.buscarUsuarioPorId);
 
 // Criar usuário (apenas ADMIN)
 usuarioRouter.post('/', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.criarUsuario);
+
+// Criar usuários em lote (apenas ADMIN)
+usuarioRouter.post('/lote', autenticar, autorizarPor([TipoUsuario.ADMIN]), UsuarioController.criarUsuariosEmLote);
 
 // Atualizar usuário (admin ou próprio usuário)
 usuarioRouter.patch('/:id_usuario', autenticar, UsuarioController.atualizarUsuario);

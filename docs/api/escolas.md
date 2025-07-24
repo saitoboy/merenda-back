@@ -103,7 +103,7 @@ Retorna os dados detalhados de uma escola específica.
 
 ### Criar Escola
 
-Adiciona uma nova escola ao sistema.
+Adiciona uma nova escola ao sistema. Agora é obrigatório criar a escola já vinculando ao menos um segmento, enviando o campo `ids_segmentos` (array de UUIDs) no corpo da requisição.
 
 **URL**: `/escolas`
 
@@ -117,9 +117,16 @@ Adiciona uma nova escola ao sistema.
 {
   "nome_escola": "Escola Municipal Monteiro Lobato",
   "endereco_escola": "Rua das Letras, 789",
-  "email_escola": "monteirolobato@edu.exemplo.com"
+  "email_escola": "monteirolobato@edu.exemplo.com",
+  "ids_segmentos": [
+    "uuid-segmento-1",
+    "uuid-segmento-2"
+  ]
 }
 ```
+
+- O campo `ids_segmentos` é **obrigatório** e deve conter pelo menos um segmento.
+- Cada segmento informado será vinculado à nova escola.
 
 #### Resposta de Sucesso
 
@@ -143,6 +150,13 @@ Adiciona uma nova escola ao sistema.
 {
   "status": "erro",
   "mensagem": "Nome, endereço e email são obrigatórios"
+}
+```
+
+```json
+{
+  "status": "erro",
+  "mensagem": "É obrigatório informar ao menos um segmento para a escola (ids_segmentos)"
 }
 ```
 
@@ -221,7 +235,7 @@ Atualiza os dados de uma escola existente.
 
 ### Excluir Escola
 
-Remove uma escola do sistema.
+Remove uma escola do sistema. A exclusão **só é bloqueada se houver registros de estoque vinculados à escola**. Ter segmentos vinculados não impede a exclusão.
 
 **URL**: `/escolas/:id`
 
@@ -248,6 +262,22 @@ Remove uma escola do sistema.
 {
   "status": "erro",
   "mensagem": "Escola não encontrada"
+}
+```
+
+**Código**: `409 CONFLICT`
+
+```json
+{
+  "status": "erro",
+  "mensagem": "Não é possível excluir escola. Existem X registros de estoque para esta escola.",
+  "detalhes": {
+    "entidade": "escola",
+    "id": "uuid-escola",
+    "dependencias": {
+      "estoque": X
+    }
+  }
 }
 ```
 

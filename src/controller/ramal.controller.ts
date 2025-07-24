@@ -71,14 +71,16 @@ export const deletarRamal = async (req: Request, res: Response) => {
   try {
     const { id_ramal } = req.params;
     logInfo(`Controller: Deletando ramal: ${id_ramal}`, 'ramal.controller');
+    // Verifica se há escolas associadas antes de tentar remover
+    const escolasAssociadas = await RamalModel.buscarEscolasPorRamal(id_ramal);
+    if (escolasAssociadas && escolasAssociadas.length > 0) {
+      res.status(400).json({ status: StatusResposta.ERRO, mensagem: 'Não é possível deletar ramal com escolas associadas.' });
+      return;
+    }
     await RamalModel.remover(id_ramal);
     res.json({ status: StatusResposta.SUCESSO, mensagem: 'Ramal deletado com sucesso' });
   } catch (error: any) {
     logError('Erro ao deletar ramal', 'ramal.controller', error);
-    if (error.message && error.message.includes('escolas associadas')) {
-      res.status(400).json({ status: StatusResposta.ERRO, mensagem: error.message });
-      return;
-    }
     res.status(500).json({ status: StatusResposta.ERRO, mensagem: 'Erro ao deletar ramal' });
   }
 };

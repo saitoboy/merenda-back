@@ -11,10 +11,12 @@ import {
   definirIdeaisEmLote,
   atualizarDataValidade as atualizarDataValidadeService,
   consolidarEstoquePorSegmento,
-  consolidarEstoquePorEscola
+  consolidarEstoquePorEscola,
+  atualizarEstoque as atualizarEstoqueService
 } from '../services/estoque.service';
 import { buscarSegmentosPorEscola } from '../model/escola-segmento.model';
 import { logInfo, logError, logWarning } from '../utils/logger';
+import { TipoUsuario } from '../types';
 
 export const listarEstoquePorEscola = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -156,12 +158,64 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
     const dadosEstoque = req.body;
 
     // Validações básicas
-    if (!dadosEstoque.id_escola || !dadosEstoque.id_item || !dadosEstoque.quantidade_item || !dadosEstoque.numero_ideal) {
+    if (!dadosEstoque.id_escola) {
       res.status(400).json({
         status: 'erro',
-        mensagem: 'Escola, item, quantidade e número ideal são obrigatórios'
+        mensagem: 'ID da escola é obrigatório'
       });
       return;
+    }
+
+    if (!dadosEstoque.id_item) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do item é obrigatório'
+      });
+      return;
+    }
+
+    if (!dadosEstoque.id_segmento) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do segmento é obrigatório'
+      });
+      return;
+    }
+
+    if (!dadosEstoque.id_periodo) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'ID do período é obrigatório'
+      });
+      return;
+    }
+
+    // Validar quantidade (permite zero)
+    if (dadosEstoque.quantidade_item === undefined || dadosEstoque.quantidade_item === null) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Quantidade é obrigatória'
+      });
+      return;
+    }
+
+    if (typeof dadosEstoque.quantidade_item !== 'number' || dadosEstoque.quantidade_item < 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Quantidade deve ser um número maior ou igual a zero'
+      });
+      return;
+    }
+
+    // Validar número ideal (permite zero, mas não obrigatório)
+    if (dadosEstoque.numero_ideal !== undefined) {
+      if (typeof dadosEstoque.numero_ideal !== 'number' || dadosEstoque.numero_ideal < 0) {
+        res.status(400).json({
+          status: 'erro',
+          mensagem: 'Número ideal deve ser um número maior ou igual a zero'
+        });
+        return;
+      }
     }
 
     const resultado = await criarItemEstoque(dadosEstoque);
@@ -169,9 +223,15 @@ export const adicionarItemAoEstoque = async (req: Request, res: Response): Promi
     res.status(201).json({
       status: 'sucesso',
       mensagem: 'Item adicionado ao estoque com sucesso',
-      dados: resultado
+      dados: {
+        id_estoque: resultado,
+        quantidade_adicionada: dadosEstoque.quantidade_item,
+        numero_ideal: dadosEstoque.numero_ideal || 0
+      }
     });
   } catch (error) {
+    logError('Erro ao adicionar item ao estoque', 'controller', error);
+
     if (error instanceof Error) {
       res.status(400).json({
         status: 'erro',
@@ -557,6 +617,67 @@ export const consolidadoGeralPorEscola = async (req: Request, res: Response): Pr
     res.status(500).json({
       status: 'erro',
       mensagem: 'Erro interno do servidor'
+    });
+  }
+};
+
+export const atualizarEstoque = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id_estoque } = req.params;
+    const dadosAtualizacao = req.body;
+    const usuario = req.usuario;
+
+    if (!dadosAtualizacao || Object.keys(dadosAtualizacao).length === 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Nenhum dado para atualizar foi enviado.'
+      });
+      return;
+    }
+
+    // Permissões por tipo de usuário
+    let camposPermitidos: string[] = [];
+    if (usuario?.tipo === TipoUsuario.ADMIN) {
+      camposPermitidos = ['quantidade_item', 'numero_ideal', 'validade', 'observacao'];
+    } else if (usuario?.tipo === TipoUsuario.ESCOLA) {
+      camposPermitidos = ['quantidade_item', 'validade', 'observacao'];
+    } else if (usuario?.tipo === TipoUsuario.NUTRICIONISTA) {
+      camposPermitidos = ['numero_ideal'];
+    } else {
+      res.status(403).json({
+        status: 'erro',
+        mensagem: 'Permissão negada para atualizar estoque.'
+      });
+      return;
+    }
+
+    // Filtrar apenas os campos permitidos
+    const dadosFiltrados: any = {};
+    for (const campo of camposPermitidos) {
+      if (dadosAtualizacao[campo] !== undefined) {
+        dadosFiltrados[campo] = dadosAtualizacao[campo];
+      }
+    }
+
+    if (Object.keys(dadosFiltrados).length === 0) {
+      res.status(400).json({
+        status: 'erro',
+        mensagem: 'Nenhum campo permitido para atualização foi enviado.'
+      });
+      return;
+    }
+
+    const resultado = await atualizarEstoqueService(id_estoque, dadosFiltrados);
+
+    res.status(200).json({
+      status: 'sucesso',
+      mensagem: 'Estoque atualizado com sucesso',
+      dados: resultado
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'erro',
+      mensagem: 'Erro ao atualizar estoque'
     });
   }
 };

@@ -19,6 +19,8 @@ import diagnosticoRouter from './routes/diagnostico.routes';
 import fotoPerfilRouter from './routes/foto-perfil.routes';
 import usuarioRouter from './routes/usuario.routes';
 import ramalRouter from './routes/ramal.routes';
+import auditoriaPedidoRouter from './routes/auditoria-pedido.routes';
+import pedidoEscolaRouter from './routes/pedido-escola.routes';
 
 const app = express();
 
@@ -30,7 +32,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Configuração detalhada do CORS
 app.use(cors({
   origin: '*', // Permite todas as origens em ambiente de desenvolvimento
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 logger.success('Middlewares básicos configurados', 'server');
@@ -139,6 +141,12 @@ logger.debug('Rotas de usuários registradas', 'route');
 
 app.use('/ramais', ramalRouter);
 logger.debug('Rotas de ramais registradas', 'route');
+
+app.use('/auditoria-pedido', auditoriaPedidoRouter);
+logger.debug('Rotas de auditoria de pedido registradas', 'route');
+
+app.use('/pedido-escola', pedidoEscolaRouter);
+logger.debug('Rotas de pedido-escola registradas', 'route');
 
 logger.success('Todas as rotas registradas com sucesso!', 'route');
 

@@ -45,36 +45,15 @@ export const buscarEscolaPorId = async (id: string) => {
   }
 };
 
-export const criarEscola = async (dados: Omit<Escola, 'id_escola'>) => {
-  try {
-    logger.info('Iniciando criação de nova escola', 'escola');
-    logger.debug(`Dados da escola: ${dados.nome_escola}, ${dados.email_escola}`, 'escola');
-    
-    // Verificar se já existe escola com o mesmo email
-    logger.debug(`Verificando se já existe escola com o email: ${dados.email_escola}`, 'escola');
-    const escolaExistente = await EscolaModel.buscarPorEmail(dados.email_escola);
-    
-    if (escolaExistente) {
-      logger.warning(`Já existe uma escola com o email ${dados.email_escola}`, 'escola');
-      throw new Error('Já existe uma escola com este email');
-    }
-    
-    const id = await EscolaModel.criar(dados);
-    
-    logger.success(`Escola criada com sucesso: ${id}`, 'escola');
-    return {
-      id,
-      mensagem: 'Escola criada com sucesso'
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      logger.error(`Erro ao criar escola: ${error.message}`, 'escola');
-      throw new Error(`Erro ao criar escola: ${error.message}`);
-    } else {
-      logger.error('Erro desconhecido ao criar escola', 'escola');
-      throw new Error('Erro desconhecido ao criar escola');
-    }
+export const criarComSegmentos = async (
+  escola: Omit<Escola, 'id_escola'>,
+  ids_segmentos: string[]
+): Promise<string> => {
+  if (!ids_segmentos || !Array.isArray(ids_segmentos) || ids_segmentos.length === 0) {
+    logger.warning('É obrigatório informar ao menos um segmento para a escola', 'escola');
+    throw new Error('É obrigatório informar ao menos um segmento para a escola');
   }
+  return await EscolaModel.criarComSegmentos(escola, ids_segmentos);
 };
 
 export const atualizarEscola = async (id: string, dados: Partial<Escola>) => {
@@ -155,29 +134,7 @@ export const excluirEscola = async (id_escola: string): Promise<void> => {
       );
     }
     
-    // 3. Verificar se existem relacionamentos escola-segmento
-    const segmentosVinculados = await connection('escola_segmento')
-      .where('id_escola', id_escola)
-      .count('* as total')
-      .first();
-    
-    const totalSegmentos = Number(segmentosVinculados?.total || 0);
-    
-    if (totalSegmentos > 0) {
-      logger.warning(`Escola ${id_escola} possui ${totalSegmentos} segmentos vinculados`, 'escola');
-      throw new ConstraintViolationError(
-        `Não é possível excluir escola. Existem ${totalSegmentos} segmentos vinculados a esta escola.`,
-        {
-          entidade: 'escola',
-          id: id_escola,
-          dependencias: {
-            segmentos: totalSegmentos
-          }
-        }
-      );
-    }
-    
-    // 4. Se não há dependências, pode excluir
+    // 3. Permitir exclusão mesmo com segmentos vinculados
     await EscolaModel.excluir(id_escola);
     
     logger.success(`Escola ${escola.nome_escola} (${id_escola}) excluída com sucesso`, 'escola');

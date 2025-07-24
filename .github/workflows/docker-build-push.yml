@@ -1,0 +1,38 @@
+name: Build and Push Backend Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # Permissão para publicar pacotes no GHCR
+      id-token: write  # Caso use login via oidc (opcional)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/backend-merenda:latest \
+            -f ./back/Dockerfile \
+            ./back
+
+      - name: Push Docker image to GHCR
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/backend-merenda:latest
+ 
