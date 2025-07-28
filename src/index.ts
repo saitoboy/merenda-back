@@ -159,13 +159,15 @@ initializeEmailService()
     logger.warning('Falha ao inicializar serviço de email, continuando sem ele', 'email', error);
   });
 
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
+const HOST = process.env.HOST || 'localhost';
+const PORT = Number(process.env.PORT) || 3000;
+
+const server = app.listen(PORT, HOST, () => {
   if (server) {
     const address = server.address();
     const port = typeof address === 'string' ? PORT : address ? address.port : PORT;
-    
-    logger.success(`Servidor rodando em http://localhost:${port}`, 'server');
+
+    logger.success(`Servidor rodando em http://${HOST}:${port}`, 'server');
     logger.info('Para testar a API, acesse a rota raiz no navegador ou use uma ferramenta como Thunder Client', 'server');
     logger.info('Pressione CTRL+C para encerrar o servidor', 'server');
   } else {
