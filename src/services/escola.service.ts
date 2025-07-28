@@ -26,12 +26,12 @@ export const buscarEscolaPorId = async (id: string) => {
   try {
     logger.info(`Buscando escola com ID: ${id}`, 'escola');
     const escola = await EscolaModel.buscarPorId(id);
-    
+
     if (!escola) {
       logger.warning(`Escola com ID ${id} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     logger.success(`Escola ${escola.nome_escola} encontrada com sucesso`, 'escola');
     return escola;
   } catch (error) {
@@ -56,33 +56,34 @@ export const criarComSegmentos = async (
   return await EscolaModel.criarComSegmentos(escola, ids_segmentos);
 };
 
-export const atualizarEscola = async (id: string, dados: Partial<Escola>) => {
+export const atualizarEscola = async (id: string, dados: Partial<Escola> & { ids_segmentos?: string[] }) => {
   try {
     logger.info(`Iniciando atualização da escola com ID: ${id}`, 'escola');
-    
+
     // Verificar se a escola existe
     logger.debug(`Verificando se a escola ${id} existe`, 'escola');
     const escolaExistente = await EscolaModel.buscarPorId(id);
-    
+
     if (!escolaExistente) {
       logger.warning(`Escola com ID ${id} não encontrada para atualização`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     // Se estiver tentando atualizar o email, verificar se já existe outra escola com o mesmo email
     if (dados.email_escola && dados.email_escola !== escolaExistente.email_escola) {
       logger.debug(`Verificando se já existe escola com o novo email: ${dados.email_escola}`, 'escola');
       const escolaComMesmoEmail = await EscolaModel.buscarPorEmail(dados.email_escola);
-      
+
       if (escolaComMesmoEmail && escolaComMesmoEmail.id_escola !== id) {
         logger.warning(`Já existe uma escola com o email ${dados.email_escola}`, 'escola');
         throw new Error('Já existe uma escola com este email');
       }
     }
-    
-    logger.debug(`Atualizando dados da escola ${escolaExistente.nome_escola}`, 'escola');
-    await EscolaModel.atualizar(id, dados);
-    
+
+    // Atualizar escola e segmentos (se enviados)
+    const { ids_segmentos, ...dadosEscola } = dados;
+    await EscolaModel.atualizarComSegmentos(id, dadosEscola, ids_segmentos);
+
     logger.success(`Escola ${escolaExistente.nome_escola} atualizada com sucesso`, 'escola');
     return {
       mensagem: 'Escola atualizada com sucesso'
@@ -105,21 +106,21 @@ export const atualizarEscola = async (id: string, dados: Partial<Escola>) => {
 export const excluirEscola = async (id_escola: string): Promise<void> => {
   try {
     logger.info(`Verificando se escola ${id_escola} pode ser excluída`, 'escola');
-    
+
     // 1. Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(id_escola);
     if (!escola) {
       throw new NotFoundError('Escola não encontrada');
     }
-    
+
     // 2. Verificar se existem registros de estoque para esta escola
     const estoqueVinculado = await connection('estoque')
       .where('id_escola', id_escola)
       .count('* as total')
       .first();
-    
+
     const totalEstoque = Number(estoqueVinculado?.total || 0);
-    
+
     if (totalEstoque > 0) {
       logger.warning(`Escola ${id_escola} possui ${totalEstoque} registros de estoque`, 'escola');
       throw new ConstraintViolationError(
@@ -133,18 +134,18 @@ export const excluirEscola = async (id_escola: string): Promise<void> => {
         }
       );
     }
-    
+
     // 3. Permitir exclusão mesmo com segmentos vinculados
     await EscolaModel.excluir(id_escola);
-    
+
     logger.success(`Escola ${escola.nome_escola} (${id_escola}) excluída com sucesso`, 'escola');
-    
+
   } catch (error) {
     if (error instanceof NotFoundError || error instanceof ConstraintViolationError) {
       // Re-throw errors customizados para serem tratados no controller
       throw error;
     }
-    
+
     if (error instanceof Error) {
       logger.error(`Erro ao excluir escola: ${error.message}`, 'escola');
       throw new Error(`Erro ao excluir escola: ${error.message}`);
@@ -175,18 +176,18 @@ export const buscarEscolasPorSegmento = async (idSegmento: string) => {
 export const importarEscolas = async (escolas: Omit<Escola, 'id_escola'>[]) => {
   try {
     logger.info(`Iniciando importação em massa de ${escolas.length} escolas`, 'escola');
-    
+
     // Validação básica dos dados
     if (!Array.isArray(escolas) || escolas.length === 0) {
       logger.warning('Nenhuma escola para importar', 'escola');
       throw new Error('Nenhuma escola para importar');
     }
-    
+
     const resultados = [];
     const erros = [];
-    
+
     logger.debug(`Processando ${escolas.length} escolas para importação`, 'escola');
-    
+
     // Processar cada escola
     for (const [index, escolaData] of escolas.entries()) {
       try {
@@ -197,21 +198,21 @@ export const importarEscolas = async (escolas: Omit<Escola, 'id_escola'>[]) => {
           erros.push({ indice: index, erro });
           continue;
         }
-        
+
         // Verificar se já existe escola com o mesmo email
         const escolaExistente = await EscolaModel.buscarPorEmail(escolaData.email_escola);
-        
+
         if (escolaExistente) {
           const erro = `Escola #${index + 1}: Já existe uma escola com o email ${escolaData.email_escola}`;
           logger.warning(erro, 'escola');
           erros.push({ indice: index, erro });
           continue;
         }
-        
+
         // Criar a escola
         const id = await EscolaModel.criar(escolaData);
         logger.success(`Escola #${index + 1} (${escolaData.nome_escola}) importada com sucesso, ID: ${id}`, 'escola');
-        
+
         resultados.push({
           indice: index,
           id,
@@ -224,9 +225,9 @@ export const importarEscolas = async (escolas: Omit<Escola, 'id_escola'>[]) => {
         erros.push({ indice: index, erro });
       }
     }
-    
+
     logger.info(`Importação concluída: ${resultados.length} escolas importadas com sucesso, ${erros.length} falhas`, 'escola');
-    
+
     return {
       total: escolas.length,
       sucesso: resultados.length,
@@ -249,7 +250,7 @@ export const buscarEscolasComSegmentos = async () => {
   try {
     logger.info('Buscando escolas com seus segmentos', 'escola');
     const escolas = await EscolaModel.listarTodasComSegmentos();
-    
+
     logger.success(`Encontradas ${escolas.length} escolas com segmentos`, 'escola');
     return escolas;
   } catch (error) {
@@ -269,24 +270,24 @@ export const buscarEscolasComSegmentos = async () => {
 export const adicionarSegmentoEscola = async (idEscola: string, idSegmento: string) => {
   try {
     logger.info(`Adicionando segmento ${idSegmento} à escola ${idEscola}`, 'escola');
-    
+
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
     if (!escola) {
       logger.warning(`Escola com ID ${idEscola} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     // Verificar se o relacionamento já existe
     const relacionamentoExistente = await EscolaSegmentoModel.buscar(idEscola, idSegmento);
     if (relacionamentoExistente) {
       logger.warning(`Escola ${idEscola} já possui o segmento ${idSegmento}`, 'escola');
       throw new Error('Escola já possui este segmento');
     }
-    
+
     // Criar o relacionamento
     await EscolaSegmentoModel.criar({ id_escola: idEscola, id_segmento: idSegmento });
-    
+
     logger.success(`Segmento ${idSegmento} adicionado à escola ${idEscola} com sucesso`, 'escola');
     return {
       mensagem: 'Segmento adicionado à escola com sucesso'
@@ -305,24 +306,24 @@ export const adicionarSegmentoEscola = async (idEscola: string, idSegmento: stri
 export const removerSegmentoEscola = async (idEscola: string, idSegmento: string) => {
   try {
     logger.info(`Removendo segmento ${idSegmento} da escola ${idEscola}`, 'escola');
-    
+
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
     if (!escola) {
       logger.warning(`Escola com ID ${idEscola} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     // Verificar se o relacionamento existe
     const relacionamento = await EscolaSegmentoModel.buscar(idEscola, idSegmento);
     if (!relacionamento) {
       logger.warning(`Escola ${idEscola} não possui o segmento ${idSegmento}`, 'escola');
       throw new Error('Escola não possui este segmento');
     }
-    
+
     // Remover o relacionamento
     await EscolaSegmentoModel.remover(idEscola, idSegmento);
-    
+
     logger.success(`Segmento ${idSegmento} removido da escola ${idEscola} com sucesso`, 'escola');
     return {
       mensagem: 'Segmento removido da escola com sucesso'
@@ -341,16 +342,16 @@ export const removerSegmentoEscola = async (idEscola: string, idSegmento: string
 export const listarSegmentosEscola = async (idEscola: string) => {
   try {
     logger.info(`Listando segmentos da escola ${idEscola}`, 'escola');
-    
+
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
     if (!escola) {
       logger.warning(`Escola com ID ${idEscola} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     const segmentos = await EscolaSegmentoModel.buscarSegmentosPorEscola(idEscola);
-    
+
     logger.success(`Encontrados ${segmentos.length} segmentos para a escola ${idEscola}`, 'escola');
     return segmentos;
   } catch (error) {
@@ -371,36 +372,36 @@ export const buscarEscolasComFiltros = async (filtros: FiltrosEscola) => {
   try {
     logger.info('Buscando escolas com filtros avançados', 'escola');
     logger.debug(`Filtros aplicados: ${JSON.stringify(filtros)}`, 'escola');
-    
+
     // Por enquanto, implementação básica - pode ser expandida no model futuramente
     let escolas = await EscolaModel.listarTodas();
-    
+
     // Aplicar filtros
     if (filtros.nome_escola) {
-      escolas = escolas.filter(escola => 
+      escolas = escolas.filter(escola =>
         escola.nome_escola.toLowerCase().includes(filtros.nome_escola!.toLowerCase())
       );
     }
-    
+
     if (filtros.email_escola) {
-      escolas = escolas.filter(escola => 
+      escolas = escolas.filter(escola =>
         escola.email_escola.toLowerCase().includes(filtros.email_escola!.toLowerCase())
       );
     }
-    
+
     if (filtros.endereco_escola) {
-      escolas = escolas.filter(escola => 
+      escolas = escolas.filter(escola =>
         escola.endereco_escola.toLowerCase().includes(filtros.endereco_escola!.toLowerCase())
       );
     }
-    
+
     // Filtro por segmento requer consulta adicional
     if (filtros.id_segmento) {
       const escolasDoSegmento = await EscolaModel.buscarPorSegmento(filtros.id_segmento);
       const idsEscolasDoSegmento = escolasDoSegmento.map(e => e.id_escola);
       escolas = escolas.filter(escola => idsEscolasDoSegmento.includes(escola.id_escola));
     }
-    
+
     logger.success(`Encontradas ${escolas.length} escolas com os filtros aplicados`, 'escola');
     return escolas;
   } catch (error) {
@@ -420,17 +421,17 @@ export const buscarEscolasComFiltros = async (filtros: FiltrosEscola) => {
 export const obterMetricasEscola = async (idEscola: string) => {
   try {
     logger.info(`Obtendo métricas da escola ${idEscola}`, 'escola');
-    
+
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
     if (!escola) {
       logger.warning(`Escola com ID ${idEscola} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     // Buscar segmentos da escola
     const segmentos = await EscolaSegmentoModel.buscarSegmentosPorEscola(idEscola);
-    
+
     // Métricas básicas
     const metricas = {
       id_escola: idEscola,
@@ -439,7 +440,7 @@ export const obterMetricasEscola = async (idEscola: string) => {
       segmentos: segmentos.map(s => s.nome_segmento),
       data_ultima_atualizacao: new Date()
     };
-    
+
     logger.success(`Métricas da escola ${idEscola} obtidas com sucesso`, 'escola');
     return metricas;
   } catch (error) {
@@ -459,17 +460,17 @@ export const obterMetricasEscola = async (idEscola: string) => {
 export const obterDashboardEscola = async (idEscola: string) => {
   try {
     logger.info(`Obtendo dashboard da escola ${idEscola}`, 'escola');
-    
+
     // Verificar se a escola existe
     const escola = await EscolaModel.buscarPorId(idEscola);
     if (!escola) {
       logger.warning(`Escola com ID ${idEscola} não encontrada`, 'escola');
       throw new Error('Escola não encontrada');
     }
-    
+
     // Buscar dados para o dashboard
     const segmentos = await EscolaSegmentoModel.buscarSegmentosPorEscola(idEscola);
-    
+
     // Dashboard básico
     const dashboard = {
       escola: {
@@ -492,7 +493,7 @@ export const obterDashboardEscola = async (idEscola: string) => {
         pedidos_pendentes: 0
       }
     };
-    
+
     logger.success(`Dashboard da escola ${idEscola} obtido com sucesso`, 'escola');
     return dashboard;
   } catch (error) {
