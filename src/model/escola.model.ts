@@ -47,11 +47,36 @@ export const criar = async (escola: Omit<Escola, 'id_escola'>): Promise<string> 
   return result.id_escola;
 };
 
-// Atualizar escola
-export const atualizar = async (id_escola: string, dados: Partial<Omit<Escola, 'id_escola'>>): Promise<void> => {
-  await connection(table)
-    .where({ id_escola })
-    .update(dados);
+export const atualizarComSegmentos = async (
+  id_escola: string,
+  dados: Partial<Omit<Escola, 'id_escola'>>,
+  ids_segmentos?: string[]
+): Promise<void> => {
+  await connection.transaction(async trx => {
+    // Atualiza os dados da escola
+    await trx(table)
+      .where({ id_escola })
+      .update(dados);
+
+    if (Array.isArray(ids_segmentos)) {
+      // Remove todos os segmentos antigos
+      await trx('escola_segmento')
+        .where({ id_escola })
+        .delete();
+
+      // Insere os novos segmentos
+      if (ids_segmentos.length > 0) {
+        const now = new Date();
+        const relacoes = ids_segmentos.map(id_segmento => ({
+          id_escola,
+          id_segmento,
+          created_at: now,
+          updated_at: now
+        }));
+        await trx('escola_segmento').insert(relacoes);
+      }
+    }
+  });
 };
 
 // Excluir escola
