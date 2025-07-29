@@ -105,7 +105,8 @@ export const enviarOTP = async (request: EnviarOTPRequest): Promise<EnviarOTPRes
     const emailResult = await sendOTPEmail(
       emailNormalizado, 
       codigoOTP, 
-      OTP_CONFIG.EXPIRACAO_MINUTOS
+      OTP_CONFIG.EXPIRACAO_MINUTOS,
+      usuario.nome_usuario
     );
 
     if (!emailResult.success) {
