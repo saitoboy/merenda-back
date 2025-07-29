@@ -55,7 +55,7 @@ class EmailService {
 
       // Testar a conexão
       await this.testConnection();
-      
+
       this.isConfigured = true;
       logInfo('Serviço de email configurado com sucesso', 'email');
     } catch (error) {
@@ -69,10 +69,10 @@ class EmailService {
    */
   private async setupDevelopmentEmail(): Promise<void> {
     logInfo('Configurando email para desenvolvimento (Ethereal Email)', 'email');
-    
+
     // Criar conta de teste do Ethereal Email
     const testAccount = await nodemailer.createTestAccount();
-    
+
     this.transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
@@ -111,7 +111,7 @@ class EmailService {
     }
 
     this.transporter = nodemailer.createTransport(config);
-    
+
     logDebug('Configuração SMTP carregada', 'email', {
       host: config.host,
       port: config.port,
@@ -151,7 +151,7 @@ class EmailService {
 
     try {
       logInfo(`Enviando email para ${emailData.to}`, 'email');
-      
+
       const info = await this.transporter.sendMail({
         from: process.env.SMTP_FROM || '"Merenda Smart Flow" <noreply@merenda.gov.br>',
         to: emailData.to,
@@ -190,11 +190,14 @@ class EmailService {
   /**
    * Envia email com código OTP
    */
-  async sendOTPEmail(email: string, codigo: string, tempoExpiracao: number): Promise<EmailResult> {
+  async sendOTPEmail(email: string, codigo: string, tempoExpiracao: number, nome?: string): Promise<EmailResult> {
     const subject = 'Código de Verificação - Caminho da Merenda';
-    
+
+    // Se não passar nome, usa só "Olá"
+    const saudacao = nome ? `Olá, ${nome}!` : 'Olá!';
+
     const text = `
-Olá!
+${saudacao}
 
 Você solicitou a redefinição de sua senha no sistema Caminho da Merenda.
 
@@ -206,7 +209,7 @@ Se você não solicitou esta redefinição, ignore este email.
 
 Atenciosamente,
 Equipe Caminho da Merenda
-    `.trim();
+  `.trim();
 
     const html = `
 <!DOCTYPE html>
@@ -233,7 +236,7 @@ Equipe Caminho da Merenda
         
         <div class="content">
             <h2>Código de Verificação</h2>
-            <p>Olá!</p>
+            <p>${saudacao}</p>
             <p>Você solicitou a redefinição de sua senha no sistema Caminho da Merenda.</p>
             
             <div class="code">${codigo}</div>
@@ -257,7 +260,7 @@ Equipe Caminho da Merenda
     </div>
 </body>
 </html>
-    `.trim();
+  `.trim();
 
     return await this.sendEmail({
       to: email,
@@ -290,7 +293,7 @@ export default emailService;
 // Funções helper para uso direto
 export const initializeEmailService = () => emailService.initialize();
 export const sendEmail = (emailData: EmailData) => emailService.sendEmail(emailData);
-export const sendOTPEmail = (email: string, codigo: string, tempoExpiracao: number) => 
-  emailService.sendOTPEmail(email, codigo, tempoExpiracao);
+export const sendOTPEmail = (email: string, codigo: string, tempoExpiracao: number, nome?: string) =>
+  emailService.sendOTPEmail(email, codigo, tempoExpiracao, nome);
 export const isEmailServiceReady = () => emailService.isReady();
 export const isEmailServiceDev = () => emailService.isDev();
