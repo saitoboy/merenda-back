@@ -17,7 +17,27 @@ const UPLOAD_CONFIG = {
   ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   UPLOADS_DIR: path.join(__dirname, '../../data/uploads/perfil'),
   URL_BASE: '/uploads/perfil',
-  SERVER_URL: process.env.SERVER_URL || 'http://localhost:3003'
+  // Detecta URL do servidor automaticamente
+  get SERVER_URL() {
+    // 1. Verifica se há SERVER_URL no .env
+    if (process.env.SERVER_URL) {
+      return process.env.SERVER_URL;
+    }
+    
+    // 2. Se estiver em produção, tenta detectar pela porta/host
+    if (process.env.NODE_ENV === 'production') {
+      const host = process.env.HOST || 'localhost';
+      const port = process.env.PORT || '3003';
+      
+      // Se host não for localhost, usa o host (para deploy em servidor)
+      if (host !== 'localhost') {
+        return `http://${host}${port !== '80' ? ':' + port : ''}`;
+      }
+    }
+    
+    // 3. Fallback para desenvolvimento
+    return `http://localhost:${process.env.PORT || '3003'}`;
+  }
 };
 
 /**
