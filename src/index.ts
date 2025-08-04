@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import path from "path";
 import { AddressInfo } from "net";
 import connection from "./connection";
 import { logger } from './utils';
@@ -29,12 +30,22 @@ logger.info('Inicializando Caminho da Merenda API', 'server');
 // Aumentando o limite do tamanho do payload para 10MB
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 // Configuração detalhada do CORS
 app.use(cors({
   origin: '*', // Permite todas as origens em ambiente de desenvolvimento
   methods: ['GET', 'PATCH', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Middleware para servir arquivos estáticos (fotos de perfil)
+const uploadsPath = path.join(__dirname, '../data/uploads');
+app.use('/uploads', express.static(uploadsPath));
+logger.success(`Middleware de arquivos estáticos configurado: ${uploadsPath}`, 'server');
+
+// Log para debug do caminho
+logger.info(`Caminho absoluto dos uploads: ${path.resolve(uploadsPath)}`, 'server');
+
 logger.success('Middlewares básicos configurados', 'server');
 
 // Middleware para log de requisições
