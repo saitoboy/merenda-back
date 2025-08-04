@@ -1,302 +1,255 @@
-import * as usuarioModel from '../model/usuario.model';
+import fs from 'fs-extra';
+import path from 'path';
+import multer from 'multer';
+import { Request } from 'express';
 import { logger } from '../utils';
-import { UploadFotoResponse, RemoveFotoResponse } from '../types';
+import * as UsuarioModel from '../model/usuario.model';
 
-interface FotoPerfilServiceConfig {
-  wpUrl: string;
-  wpUser: string;
-  wpAppPassword: string;
+/**
+ * Serviço simplificado para upload de fotos de perfil
+ * Salva localmente na pasta /data/uploads/perfil
+ * Exclui foto anterior automaticamente
+ */
+
+// Configurações
+const UPLOAD_CONFIG = {
+  MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  UPLOADS_DIR: path.join(__dirname, '../../data/uploads/perfil'),
+  URL_BASE: '/uploads/perfil',
+  SERVER_URL: process.env.SERVER_URL || 'http://localhost:3003'
+};
+
+/**
+ * Garante que a pasta de uploads existe
+ */
+async function ensureUploadsDir(): Promise<void> {
+  try {
+    await fs.ensureDir(UPLOAD_CONFIG.UPLOADS_DIR);
+    logger.info('Pasta de uploads verificada/criada', 'upload');
+  } catch (error) {
+    logger.error('Erro ao criar pasta de uploads', 'upload', error);
+    throw new Error('Erro ao preparar pasta de uploads');
+  }
 }
 
 /**
- * Service para gerenciar fotos de perfil de usuários
- * Integra com WordPress REST API para upload/remoção
+ * Gera nome único para o arquivo
  */
-export class FotoPerfilService {
-  private readonly wpUrl: string;
-  private readonly wpUser: string;
-  private readonly wpAppPassword: string;
+function generateFileName(userId: string, originalName: string): string {
+  const timestamp = Date.now();
+  const extension = path.extname(originalName).toLowerCase();
+  return `user_${userId}_${timestamp}${extension}`;
+}
 
-  constructor() {
-    this.wpUrl = process.env.WP_URL!;
-    this.wpUser = process.env.WP_USER!;
-    this.wpAppPassword = process.env.WP_APP_PASSWORD!;
-
-    if (!this.wpUrl || !this.wpUser || !this.wpAppPassword) {
-      throw new Error('Configuração do WordPress ausente no .env');
-    }
+/**
+ * Valida o arquivo enviado
+ */
+function validateFile(file: Express.Multer.File): void {
+  // Validar tipo de arquivo
+  if (!UPLOAD_CONFIG.ALLOWED_TYPES.includes(file.mimetype)) {
+    throw new Error(`Tipo de arquivo não permitido. Use: ${UPLOAD_CONFIG.ALLOWED_TYPES.join(', ')}`);
   }
 
-  /**
-   * Faz upload de uma foto de perfil para o WordPress
-   * @param fileBuffer Buffer da imagem
-   * @param fileName Nome do arquivo
-   * @param mimeType Tipo MIME do arquivo
-   * @param userId ID do usuário (para organização)
-   * @returns Promise com resposta do upload
-   */
-  async uploadFotoPerfil(
-    fileBuffer: Buffer,
-    fileName: string,
-    mimeType: string,
-    userId: string
-  ): Promise<UploadFotoResponse> {
-    try {
-      // Criar nome único para o arquivo
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const uniqueFileName = `perfil_${userId}_${timestamp}_${fileName}`;
+  // Validar tamanho
+  if (file.size > UPLOAD_CONFIG.MAX_FILE_SIZE) {
+    throw new Error(`Arquivo muito grande. Máximo: ${UPLOAD_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB`);
+  }
 
-      logger.info(`Iniciando upload para usuário ${userId}, arquivo: ${uniqueFileName}`, 'foto-perfil');
+  logger.info(`Arquivo validado: ${file.originalname} (${file.size} bytes)`, 'upload');
+}
 
-      // Montar endpoint do WordPress
-      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media`;
-      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Disposition': `attachment; filename="${uniqueFileName}"`,
-          'Content-Type': mimeType,
-        },
-        body: fileBuffer,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`Erro HTTP WordPress: ${response.status} - ${errorText}`, 'foto-perfil');
-        return {
-          success: false,
-          error: `Erro HTTP WordPress: ${response.status} - ${errorText}`
-        };
+/**
+ * Exclui foto anterior do usuário
+ */
+async function excluirFotoAnterior(userId: string): Promise<void> {
+  try {
+    // Buscar usuário para pegar URL da foto atual
+    const usuario = await UsuarioModel.buscarPorId(userId);
+    
+    if (usuario?.foto_perfil_url) {
+      // Extrair nome do arquivo da URL (funciona com URL completa ou relativa)
+      const fileName = path.basename(usuario.foto_perfil_url);
+      const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, fileName);
+      
+      // Verificar se arquivo existe e excluir
+      if (await fs.pathExists(filePath)) {
+        await fs.remove(filePath);
+        logger.info(`Foto anterior excluída: ${fileName}`, 'upload');
       }
-
-      const responseData = await response.json();
-      logger.success('Upload concluído com sucesso no WordPress', 'foto-perfil', responseData);
-
-      return {
-        success: true,
-        fileId: responseData.id?.toString(),
-        fileName: responseData.title?.rendered || uniqueFileName,
-        fotoUrl: responseData.source_url
-      };
-    } catch (error: any) {
-      logger.error(`Erro na requisição de upload: ${error.message}`, 'foto-perfil');
-      return {
-        success: false,
-        error: `Erro de comunicação com WordPress: ${error.message}`
-      };
     }
-  }
-
-  /**
-   * Remove uma foto de perfil do WordPress
-   * @param fileId ID do arquivo no WordPress
-   * @param userId ID do usuário (para logs)
-   * @returns Promise com resposta da remoção
-   */
-  async removerFotoPerfil(fileId: string, userId: string): Promise<RemoveFotoResponse> {
-    try {
-      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media/${fileId}?force=true`;
-      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
-
-      logger.info(`Removendo arquivo ${fileId} do usuário ${userId} no WordPress`, 'foto-perfil');
-
-      const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`Erro HTTP WordPress: ${response.status} - ${errorText}`, 'foto-perfil');
-        return {
-          success: false,
-          error: `Erro HTTP WordPress: ${response.status} - ${errorText}`
-        };
-      }
-
-      logger.success('Remoção concluída no WordPress', 'foto-perfil');
-      return {
-        success: true,
-        message: 'Arquivo removido com sucesso do WordPress'
-      };
-    } catch (error: any) {
-      logger.error(`Erro na remoção: ${error.message}`, 'foto-perfil');
-      return {
-        success: false,
-        error: `Erro de comunicação com WordPress: ${error.message}`
-      };
-    }
-  }
-
-  /**
-   * Testa se o WordPress está funcionando
-   * @returns Promise com resultado do teste
-   */
-  async testarConexao(): Promise<{ success: boolean; data?: any; error?: string }> {
-    try {
-      logger.info('Testando conexão com WordPress', 'foto-perfil');
-      if (!this.wpUrl) {
-        return { success: false, error: 'URL do WordPress não configurada' };
-      }
-      // Testa endpoint de mídia
-      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media?per_page=1`;
-      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const responseData = await response.json();
-      logger.success('WordPress está online', 'foto-perfil', responseData);
-      return {
-        success: true,
-        data: {
-          status: response.status,
-          response: responseData,
-          url: this.wpUrl
-        }
-      };
-    } catch (error: any) {
-      logger.error(`Erro no teste de conexão: ${error.message}`, 'foto-perfil');
-      return {
-        success: false,
-        error: `WordPress não está acessível: ${error.message}`
-      };
-    }
-  }
-
-  /**
-   * Atualiza a URL da foto de perfil no banco de dados
-   * @param userId ID do usuário
-   * @param fotoUrl URL da foto (ou null para remover)
-   */
-  async atualizarFotoPerfilDB(userId: string, fotoUrl: string | null): Promise<void> {
-    try {
-      await usuarioModel.atualizar(userId, { foto_perfil_url: fotoUrl });
-      logger.success(`URL da foto atualizada no BD para usuário ${userId}`, 'foto-perfil');
-    } catch (error: any) {
-      logger.error(`Erro ao atualizar BD: ${error.message}`, 'foto-perfil');
-      throw new Error(`Erro ao atualizar banco de dados: ${error.message}`);
-    }
-  }
-
-  /**
-   * Extrai o fileId de uma URL do WordPress (padrão: .../media/{id})
-   * @param fotoUrl URL da imagem
-   * @returns fileId ou null se não encontrado
-   */
-  extractFileIdFromUrl(fotoUrl: string): string | null {
-    try {
-      // Exemplo de URL: https://site.com/wp-content/uploads/2025/07/perfil_xxx.jpg
-      // Não há ID na URL, então precisamos salvar o ID no banco junto com a URL, ou extrair de metadados se disponível
-      // Aqui, tentamos extrair do padrão .../media/{id} se for salvo assim
-      const match = fotoUrl.match(/media\/(\d+)/);
-      if (match && match[1]) {
-        return match[1];
-      }
-      return null;
-    } catch (error) {
-      logger.error('Erro ao extrair fileId da URL', 'foto-perfil', error);
-      return null;
-    }
-  }
-
-  /**
-   * Valida se o arquivo é uma imagem válida
-   * @param mimeType Tipo MIME do arquivo
-   * @param fileSize Tamanho do arquivo em bytes
-   * @returns true se válido, false caso contrário
-   */
-  validarArquivoImagem(mimeType: string, fileSize: number): { valid: boolean; error?: string } {
-    // Tipos MIME permitidos
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg', 
-      'image/png',
-      'image/webp',
-      'image/gif'
-    ];
-
-    if (!allowedTypes.includes(mimeType)) {
-      return {
-        valid: false,
-        error: 'Tipo de arquivo não permitido. Use: JPEG, PNG, WebP ou GIF'
-      };
-    }
-
-    // Limite de 5MB
-    const maxSize = 5 * 1024 * 1024; // 5MB em bytes
-    if (fileSize > maxSize) {
-      return {
-        valid: false,
-        error: 'Arquivo muito grande. Limite máximo: 5MB'
-      };
-    }
-
-    return { valid: true };
-  }
-
-  /**
-   * Lista todas as mídias do WordPress (paginado)
-   * @param page Página (opcional)
-   * @param perPage Itens por página (opcional)
-   * @returns Lista de mídias
-   */
-  async listarMidiasWordPress(page: number = 1, perPage: number = 20): Promise<any> {
-    try {
-      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media?page=${page}&per_page=${perPage}`;
-      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: { 'Authorization': `Basic ${auth}` },
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`Erro ao listar mídias: ${response.status} - ${errorText}`, 'foto-perfil');
-        return { success: false, error: `Erro HTTP WordPress: ${response.status} - ${errorText}` };
-      }
-      const data = await response.json();
-      return { success: true, data };
-    } catch (error: any) {
-      logger.error(`Erro ao listar mídias: ${error.message}`, 'foto-perfil');
-      return { success: false, error: `Erro de comunicação com WordPress: ${error.message}` };
-    }
-  }
-
-  /**
-   * Busca uma mídia do WordPress por ID
-   * @param id ID da mídia
-   * @returns Dados da mídia
-   */
-  async buscarMidiaPorId(id: string): Promise<any> {
-    try {
-      const endpoint = `${this.wpUrl.replace(/\/$/, '')}/wp-json/wp/v2/media/${id}`;
-      const auth = Buffer.from(`${this.wpUser}:${this.wpAppPassword}`).toString('base64');
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: { 'Authorization': `Basic ${auth}` },
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`Erro ao buscar mídia: ${response.status} - ${errorText}`, 'foto-perfil');
-        return { success: false, error: `Erro HTTP WordPress: ${response.status} - ${errorText}` };
-      }
-      const data = await response.json();
-      return { success: true, data };
-    } catch (error: any) {
-      logger.error(`Erro ao buscar mídia: ${error.message}`, 'foto-perfil');
-      return { success: false, error: `Erro de comunicação com WordPress: ${error.message}` };
-    }
+  } catch (error) {
+    logger.warning('Erro ao excluir foto anterior (continuando)', 'upload', error);
+    // Não interromper o processo por erro na exclusão
   }
 }
 
-const fotoPerfilService = new FotoPerfilService();
-export default fotoPerfilService;
+/**
+ * Configuração do Multer para upload
+ */
+export const uploadConfig = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: UPLOAD_CONFIG.MAX_FILE_SIZE
+  },
+  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    try {
+      // Validar tipo de arquivo
+      if (!UPLOAD_CONFIG.ALLOWED_TYPES.includes(file.mimetype)) {
+        return cb(new Error(`Tipo de arquivo não permitido. Use: ${UPLOAD_CONFIG.ALLOWED_TYPES.join(', ')}`));
+      }
+      cb(null, true);
+    } catch (error) {
+      cb(error as Error);
+    }
+  }
+});
+
+/**
+ * Upload de foto de perfil
+ */
+export const uploadFotoPerfil = async (userId: string, file: Express.Multer.File): Promise<string> => {
+  try {
+    logger.info(`Iniciando upload de foto para usuário ${userId}`, 'upload');
+
+    // Validar arquivo
+    validateFile(file);
+
+    // Garantir que pasta existe
+    await ensureUploadsDir();
+
+    // Excluir foto anterior
+    await excluirFotoAnterior(userId);
+
+    // Gerar nome único
+    const fileName = generateFileName(userId, file.originalname);
+    const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, fileName);
+
+    // Salvar arquivo
+    await fs.writeFile(filePath, file.buffer);
+    logger.info(`Arquivo salvo: ${fileName}`, 'upload');
+
+    // Gerar URL de acesso completa
+    const fotoUrl = `${UPLOAD_CONFIG.SERVER_URL}${UPLOAD_CONFIG.URL_BASE}/${fileName}`;
+
+    // Atualizar banco de dados
+    await UsuarioModel.atualizar(userId, { foto_perfil_url: fotoUrl });
+    logger.info(`Foto de perfil atualizada no banco para usuário ${userId}: ${fotoUrl}`, 'upload');
+
+    return fotoUrl;
+
+  } catch (error) {
+    logger.error('Erro no upload de foto', 'upload', error);
+    throw error;
+  }
+};
+
+/**
+ * Excluir foto de perfil
+ */
+export const excluirFotoPerfil = async (userId: string): Promise<void> => {
+  try {
+    logger.info(`Excluindo foto de perfil do usuário ${userId}`, 'upload');
+
+    // Excluir arquivo físico
+    await excluirFotoAnterior(userId);
+
+    // Remover URL do banco
+    await UsuarioModel.atualizar(userId, { foto_perfil_url: null });
+    logger.info(`Foto de perfil removida do banco para usuário ${userId}`, 'upload');
+
+  } catch (error) {
+    logger.error('Erro ao excluir foto de perfil', 'upload', error);
+    throw error;
+  }
+};
+
+/**
+ * Listar fotos órfãs (arquivos que não estão no banco)
+ */
+export const listarFotosOrfas = async (): Promise<string[]> => {
+  try {
+    // Garantir que pasta existe
+    await ensureUploadsDir();
+    
+    // Listar todos os arquivos na pasta
+    const arquivos = await fs.readdir(UPLOAD_CONFIG.UPLOADS_DIR);
+    
+    // Buscar todas as URLs no banco
+    const usuarios = await UsuarioModel.listarTodos();
+    const urlsNoBanco = usuarios
+      .filter(u => u.foto_perfil_url)
+      .map(u => path.basename(u.foto_perfil_url!));
+
+    // Encontrar órfãos
+    const orfaos = arquivos.filter(arquivo => !urlsNoBanco.includes(arquivo));
+    
+    logger.info(`Encontradas ${orfaos.length} fotos órfãs`, 'upload');
+    return orfaos;
+
+  } catch (error) {
+    logger.error('Erro ao listar fotos órfãs', 'upload', error);
+    throw error;
+  }
+};
+
+/**
+ * Limpar fotos órfãs
+ */
+export const limparFotosOrfas = async (): Promise<number> => {
+  try {
+    const orfaos = await listarFotosOrfas();
+    
+    for (const arquivo of orfaos) {
+      const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, arquivo);
+      await fs.remove(filePath);
+    }
+
+    logger.info(`${orfaos.length} fotos órfãs removidas`, 'upload');
+    return orfaos.length;
+
+  } catch (error) {
+    logger.error('Erro ao limpar fotos órfãs', 'upload', error);
+    throw error;
+  }
+};
+
+/**
+ * Estatísticas do sistema de upload
+ */
+export const obterEstatisticasUpload = async () => {
+  try {
+    // Garantir que pasta existe
+    await ensureUploadsDir();
+    
+    // Contar arquivos na pasta
+    const arquivos = await fs.readdir(UPLOAD_CONFIG.UPLOADS_DIR);
+    
+    // Calcular tamanho total
+    let tamanhoTotal = 0;
+    for (const arquivo of arquivos) {
+      const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, arquivo);
+      const stats = await fs.stat(filePath);
+      tamanhoTotal += stats.size;
+    }
+
+    // Contar usuários com foto
+    const usuarios = await UsuarioModel.listarTodos();
+    const usuariosComFoto = usuarios.filter(u => u.foto_perfil_url).length;
+
+    return {
+      total_arquivos: arquivos.length,
+      usuarios_com_foto: usuariosComFoto,
+      tamanho_total_mb: Math.round(tamanhoTotal / 1024 / 1024 * 100) / 100,
+      pasta_uploads: UPLOAD_CONFIG.UPLOADS_DIR,
+      tipos_permitidos: UPLOAD_CONFIG.ALLOWED_TYPES,
+      tamanho_maximo_mb: UPLOAD_CONFIG.MAX_FILE_SIZE / 1024 / 1024
+    };
+
+  } catch (error) {
+    logger.error('Erro ao obter estatísticas de upload', 'upload', error);
+    throw error;
+  }
+};
+
+
