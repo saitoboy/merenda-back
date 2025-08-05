@@ -17,26 +17,30 @@ const UPLOAD_CONFIG = {
   ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   UPLOADS_DIR: path.join(__dirname, '../../data/uploads/perfil'),
   URL_BASE: '/uploads/perfil',
-  // Detecta URL do servidor automaticamente
+
   get SERVER_URL() {
-    // 1. Verifica se há SERVER_URL no .env
+    // 1. Se SERVER_URL está definido no .env, usa ele
     if (process.env.SERVER_URL) {
-      return process.env.SERVER_URL;
+      return process.env.SERVER_URL.replace(/\/$/, ''); // Remove barra final
     }
-    
-    // 2. Se estiver em produção, tenta detectar pela porta/host
-    if (process.env.NODE_ENV === 'production') {
-      const host = process.env.HOST || 'localhost';
-      const port = process.env.PORT || '3003';
-      
-      // Se host não for localhost, usa o host (para deploy em servidor)
-      if (host !== 'localhost') {
-        return `http://${host}${port !== '80' ? ':' + port : ''}`;
+
+    // 2. Determina URL baseado no ambiente
+    const isProduction = process.env.NODE_ENV === 'production';
+    const host = process.env.HOST || 'localhost';
+    const port = process.env.PORT || '3003';
+
+    if (isProduction) {
+      // Em produção, usar HTTPS e domínio padrão
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        // Se host customizado foi definido, usar ele
+        return `https://${host}${port !== '443' ? ':' + port : ''}`;
       }
+      // Fallback para domínio padrão de produção
+      return 'https://caminho.merenda.mg.gov.br';
     }
-    
-    // 3. Fallback para desenvolvimento
-    return `http://localhost:${process.env.PORT || '3003'}`;
+
+    // 3. Desenvolvimento
+    return `http://${host}:${port}`;
   }
 };
 
@@ -86,12 +90,12 @@ async function excluirFotoAnterior(userId: string): Promise<void> {
   try {
     // Buscar usuário para pegar URL da foto atual
     const usuario = await UsuarioModel.buscarPorId(userId);
-    
+
     if (usuario?.foto_perfil_url) {
       // Extrair nome do arquivo da URL (funciona com URL completa ou relativa)
       const fileName = path.basename(usuario.foto_perfil_url);
       const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, fileName);
-      
+
       // Verificar se arquivo existe e excluir
       if (await fs.pathExists(filePath)) {
         await fs.remove(filePath);
@@ -191,10 +195,10 @@ export const listarFotosOrfas = async (): Promise<string[]> => {
   try {
     // Garantir que pasta existe
     await ensureUploadsDir();
-    
+
     // Listar todos os arquivos na pasta
     const arquivos = await fs.readdir(UPLOAD_CONFIG.UPLOADS_DIR);
-    
+
     // Buscar todas as URLs no banco
     const usuarios = await UsuarioModel.listarTodos();
     const urlsNoBanco = usuarios
@@ -203,7 +207,7 @@ export const listarFotosOrfas = async (): Promise<string[]> => {
 
     // Encontrar órfãos
     const orfaos = arquivos.filter(arquivo => !urlsNoBanco.includes(arquivo));
-    
+
     logger.info(`Encontradas ${orfaos.length} fotos órfãs`, 'upload');
     return orfaos;
 
@@ -219,7 +223,7 @@ export const listarFotosOrfas = async (): Promise<string[]> => {
 export const limparFotosOrfas = async (): Promise<number> => {
   try {
     const orfaos = await listarFotosOrfas();
-    
+
     for (const arquivo of orfaos) {
       const filePath = path.join(UPLOAD_CONFIG.UPLOADS_DIR, arquivo);
       await fs.remove(filePath);
@@ -241,10 +245,10 @@ export const obterEstatisticasUpload = async () => {
   try {
     // Garantir que pasta existe
     await ensureUploadsDir();
-    
+
     // Contar arquivos na pasta
     const arquivos = await fs.readdir(UPLOAD_CONFIG.UPLOADS_DIR);
-    
+
     // Calcular tamanho total
     let tamanhoTotal = 0;
     for (const arquivo of arquivos) {
