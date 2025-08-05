@@ -19,7 +19,7 @@ const UPLOAD_CONFIG = {
   URL_BASE: '/uploads/perfil',
   // Sempre vem do .env - nunca hardcoded
   get SERVER_URL() {
-    const serverUrl = process.env.SERVER_URL;
+    const serverUrl = process.env.SERVER_URL || 'https://merenda.muriae.mg.gov.br/api';
     
     if (!serverUrl) {
       throw new Error('SERVER_URL não está definido no arquivo .env');
