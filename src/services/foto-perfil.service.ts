@@ -17,30 +17,16 @@ const UPLOAD_CONFIG = {
   ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   UPLOADS_DIR: path.join(__dirname, '../../data/uploads/perfil'),
   URL_BASE: '/uploads/perfil',
-
+  // Sempre vem do .env - nunca hardcoded
   get SERVER_URL() {
-    // 1. Se SERVER_URL está definido no .env, usa ele
-    if (process.env.SERVER_URL) {
-      return process.env.SERVER_URL.replace(/\/$/, ''); // Remove barra final
+    const serverUrl = process.env.SERVER_URL;
+    
+    if (!serverUrl) {
+      throw new Error('SERVER_URL não está definido no arquivo .env');
     }
-
-    // 2. Determina URL baseado no ambiente
-    const isProduction = process.env.NODE_ENV === 'production';
-    const host = process.env.HOST || 'localhost';
-    const port = process.env.PORT || '3003';
-
-    if (isProduction) {
-      // Em produção, usar HTTPS e domínio padrão
-      if (host !== 'localhost' && host !== '127.0.0.1') {
-        // Se host customizado foi definido, usar ele
-        return `https://${host}${port !== '443' ? ':' + port : ''}`;
-      }
-      // Fallback para domínio padrão de produção
-      return 'https://caminho.merenda.mg.gov.br';
-    }
-
-    // 3. Desenvolvimento
-    return `http://${host}:${port}`;
+    
+    // Remove barra final se existir
+    return serverUrl.replace(/\/$/, '');
   }
 };
 
