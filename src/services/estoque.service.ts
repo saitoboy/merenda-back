@@ -278,7 +278,32 @@ export const buscarItensProximosValidade = async (
 // CRIAR E ATUALIZAR ESTOQUE
 // =====================================
 
-export const criarItemEstoque = async (dados: CriarEstoque): Promise<string> => {
+export const criarItemEstoque = async (dados: CriarEstoque | CriarEstoque[]): Promise<string | {
+  mensagem: string;
+  total_adicionados: number;
+  itens_processados: Array<{
+    id_estoque: string;
+    id_item: string;
+    nome_item?: string;
+    acao: 'criado' | 'atualizado';
+  }>;
+  erros?: Array<{
+    id_item: string;
+    id_segmento: string;
+    erro: string;
+  }>;
+}> => {
+  // Se for um único item, usar lógica simples
+  if (!Array.isArray(dados)) {
+    return criarItemEstoqueUnico(dados);
+  }
+
+  // Se for array, usar lógica em lote com transação
+  return criarMultiplosItensEstoque(dados);
+};
+
+// Função auxiliar para criar um único item (lógica original)
+const criarItemEstoqueUnico = async (dados: CriarEstoque): Promise<string> => {
   try {
     // Validar se escola existe
     const escola = await EscolaModel.buscarPorId(dados.id_escola);
@@ -349,6 +374,208 @@ export const criarItemEstoque = async (dados: CriarEstoque): Promise<string> => 
       throw new Error(`Erro ao criar item no estoque: ${error.message}`);
     } else {
       throw new Error('Erro desconhecido ao criar item no estoque');
+    }
+  }
+};
+
+// Nova função para criar múltiplos itens com transação
+const criarMultiplosItensEstoque = async (itens: CriarEstoque[]): Promise<{
+  mensagem: string;
+  total_adicionados: number;
+  itens_processados: Array<{
+    id_estoque: string;
+    id_item: string;
+    nome_item?: string;
+    acao: 'criado' | 'atualizado';
+  }>;
+  erros?: Array<{
+    id_item: string;
+    id_segmento: string;
+    erro: string;
+  }>;
+}> => {
+  const trx = await connection.transaction();
+  
+  try {
+    logInfo(`Iniciando adição de ${itens.length} itens ao estoque`, 'service');
+
+    if (itens.length === 0) {
+      throw new Error('Lista de itens não pode estar vazia');
+    }
+
+    // Validar se todos os itens são da mesma escola e período
+    const primeiroItem = itens[0];
+    const escolaId = primeiroItem.id_escola;
+    const periodoId = primeiroItem.id_periodo;
+
+    const itemsDiferentes = itens.some(item => 
+      item.id_escola !== escolaId || item.id_periodo !== periodoId
+    );
+
+    if (itemsDiferentes) {
+      throw new Error('Todos os itens devem ser da mesma escola e período');
+    }
+
+    // Validar se escola existe
+    const escola = await EscolaModel.buscarPorId(escolaId);
+    if (!escola) {
+      throw new Error('Escola não encontrada');
+    }
+
+    // Validar se período existe
+    const periodo = await PeriodoModel.buscarPorId(periodoId);
+    if (!periodo) {
+      throw new Error('Período não encontrado');
+    }
+
+    // Buscar segmentos disponíveis para a escola
+    const segmentosEscola = await EscolaSegmentoModel.buscarSegmentosPorEscola(escolaId);
+    const segmentosDisponiveis = segmentosEscola.map(seg => seg.id_segmento);
+
+    const resultados: Array<{
+      id_estoque: string;
+      id_item: string;
+      nome_item?: string;
+      acao: 'criado' | 'atualizado';
+    }> = [];
+    
+    const erros: Array<{
+      id_item: string;
+      id_segmento: string;
+      erro: string;
+    }> = [];
+
+    // Processar cada item
+    for (const item of itens) {
+      try {
+        // Validar se item existe
+        const itemDb = await ItemModel.buscarPorId(item.id_item);
+        if (!itemDb) {
+          erros.push({
+            id_item: item.id_item,
+            id_segmento: item.id_segmento,
+            erro: 'Item não encontrado'
+          });
+          continue;
+        }
+
+        // Validar se segmento existe
+        const segmento = await SegmentoModel.buscarPorId(item.id_segmento);
+        if (!segmento) {
+          erros.push({
+            id_item: item.id_item,
+            id_segmento: item.id_segmento,
+            erro: 'Segmento não encontrado'
+          });
+          continue;
+        }
+
+        // Validar se segmento está disponível para a escola
+        if (!segmentosDisponiveis.includes(item.id_segmento)) {
+          erros.push({
+            id_item: item.id_item,
+            id_segmento: item.id_segmento,
+            erro: 'Segmento não está disponível para esta escola'
+          });
+          continue;
+        }
+
+        // Validar dados numéricos
+        if (item.quantidade_item < 0) {
+          erros.push({
+            id_item: item.id_item,
+            id_segmento: item.id_segmento,
+            erro: 'Quantidade não pode ser negativa'
+          });
+          continue;
+        }
+
+        if (item.numero_ideal !== undefined && item.numero_ideal < 0) {
+          erros.push({
+            id_item: item.id_item,
+            id_segmento: item.id_segmento,
+            erro: 'Número ideal não pode ser negativo'
+          });
+          continue;
+        }
+
+        // Verificar se já existe estoque para esta combinação
+        const estoqueExistente = await EstoqueModel.buscar(
+          item.id_escola,
+          item.id_item,
+          item.id_segmento,
+          item.id_periodo
+        );
+
+        if (estoqueExistente) {
+          // Se já existe, atualizar a quantidade somando
+          const novaQuantidade = estoqueExistente.quantidade_item + item.quantidade_item;
+          await trx('estoque')
+            .where('id_estoque', estoqueExistente.id_estoque)
+            .update({
+              quantidade_item: novaQuantidade,
+              numero_ideal: item.numero_ideal || estoqueExistente.numero_ideal,
+              validade: item.validade || estoqueExistente.validade,
+              observacao: item.observacao || estoqueExistente.observacao
+            });
+
+          resultados.push({
+            id_estoque: estoqueExistente.id_estoque,
+            id_item: item.id_item,
+            nome_item: itemDb.nome_item,
+            acao: 'atualizado'
+          });
+
+          logInfo(`Item atualizado no estoque: ${estoqueExistente.id_estoque} (quantidade: ${estoqueExistente.quantidade_item} + ${item.quantidade_item} = ${novaQuantidade})`, 'service');
+        } else {
+          // Se não existe, criar novo
+          const [novoEstoque] = await trx('estoque')
+            .insert(item)
+            .returning('id_estoque');
+
+          const idEstoque = typeof novoEstoque === 'object' ? novoEstoque.id_estoque : novoEstoque;
+
+          resultados.push({
+            id_estoque: idEstoque,
+            id_item: item.id_item,
+            nome_item: itemDb.nome_item,
+            acao: 'criado'
+          });
+
+          logInfo(`Item criado no estoque: ${idEstoque}`, 'service');
+        }
+
+      } catch (itemError) {
+        logError(`Erro ao processar item ${item.id_item}`, 'service', itemError);
+        erros.push({
+          id_item: item.id_item,
+          id_segmento: item.id_segmento,
+          erro: itemError instanceof Error ? itemError.message : 'Erro desconhecido'
+        });
+      }
+    }
+
+    // Commit da transação
+    await trx.commit();
+
+    const totalAdicionados = resultados.length;
+    logInfo(`Operação em lote concluída: ${totalAdicionados} itens processados, ${erros.length} erros`, 'service');
+
+    return {
+      mensagem: `Operação concluída: ${totalAdicionados} itens processados${erros.length > 0 ? `, ${erros.length} com erro` : ''}`,
+      total_adicionados: totalAdicionados,
+      itens_processados: resultados,
+      ...(erros.length > 0 && { erros })
+    };
+
+  } catch (error) {
+    await trx.rollback();
+    logError('Erro na operação em lote de estoque', 'service', error);
+
+    if (error instanceof Error) {
+      throw new Error(`Erro ao criar itens no estoque: ${error.message}`);
+    } else {
+      throw new Error('Erro desconhecido ao criar itens no estoque');
     }
   }
 };
